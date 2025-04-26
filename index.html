@@ -64,9 +64,8 @@
                     
                     <div class="form-group">
                         <label class="form-label" for="eggWeight">Weight (grams)</label>
-                        <input type="number" id="eggWeight" class="form-input" placeholder="Weight in grams" required>
-                    </div>
-                    
+                        <input type="number" id="eggWeight" class="form-input" placeholder="Weight in grams" step="0.01" min="0" required>
+                    </div>                    
                     <div class="form-group">
                         <label class="form-label" for="incubationStart">Incubation Start Date</label>
                         <input type="date" id="incubationStart" class="form-input" required>
@@ -173,7 +172,7 @@
                     
                     <div class="form-group">
                         <label class="form-label" for="editEggWeight">Weight (grams)</label>
-                        <input type="number" id="editEggWeight" class="form-input" required>
+                        <input type="number" id="editEggWeight" class="form-input" step="0.01" min="0" required>
                     </div>
                     
                     <div class="form-group">
