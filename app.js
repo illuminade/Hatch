@@ -172,11 +172,14 @@ cancelEditEgg.addEventListener('click', () => {
 addEggForm.addEventListener('submit', (e) => {
     e.preventDefault();
     
+    const weightValue = parseFloat(document.getElementById('eggWeight').value);
+    const formattedWeight = weightValue.toFixed(2); // Format to 2 decimal places
+    
     const newEgg = {
         id: generateId(),
         name: document.getElementById('eggName').value,
         type: document.getElementById('eggType').value,
-        weight: document.getElementById('eggWeight').value,
+        weight: formattedWeight, // Store formatted weight
         incubationStart: document.getElementById('incubationStart').value,
         incubationDays: document.getElementById('incubationDays').value,
         notes: document.getElementById('eggNotes').value || '',
@@ -215,11 +218,14 @@ editEggForm.addEventListener('submit', (e) => {
     const eggIndex = eggs.findIndex(egg => egg.id === eggId);
     
     if (eggIndex !== -1) {
+        const weightValue = parseFloat(document.getElementById('editEggWeight').value);
+        const formattedWeight = weightValue.toFixed(2); // Format to 2 decimal places
+        
         eggs[eggIndex] = {
             ...eggs[eggIndex],
             name: document.getElementById('editEggName').value,
             type: document.getElementById('editEggType').value,
-            weight: document.getElementById('editEggWeight').value,
+            weight: formattedWeight, // Store formatted weight
             incubationStart: document.getElementById('editIncubationStart').value,
             incubationDays: document.getElementById('editIncubationDays').value,
             notes: document.getElementById('editEggNotes').value || '',
@@ -310,10 +316,13 @@ function showEggDetails(eggId) {
     const daysRemaining = calculateDaysRemaining(egg.incubationStart, egg.incubationDays);
     const hatchDate = calculateHatchDate(egg.incubationStart, egg.incubationDays);
     
+    // Format weight to always display with 2 decimal places
+    const weightFormatted = parseFloat(egg.weight).toFixed(2);
+    
     // Update UI with egg details
     document.getElementById('detailEggName').textContent = egg.name;
     document.getElementById('detailEggType').textContent = egg.type;
-    document.getElementById('detailEggWeight').textContent = `${egg.weight} grams`;
+    document.getElementById('detailEggWeight').textContent = `${weightFormatted} grams`;
     document.getElementById('detailIncubationStart').textContent = formatDate(egg.incubationStart);
     document.getElementById('detailIncubationPeriod').textContent = `${egg.incubationDays} days`;
     document.getElementById('detailHatchDate').textContent = hatchDate;
