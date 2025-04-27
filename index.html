@@ -75,6 +75,24 @@
                         <label class="form-label" for="incubationDays">Incubation Period (days)</label>
                         <input type="number" id="incubationDays" class="form-input" placeholder="E.g., 21 for chicken eggs" required>
                     </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Humidity Loss Rate (%)</label>
+                            <div class="humidity-rates">
+                                <div class="rate-field">
+                                    <label class="form-label-small" for="highHumidityLoss">High</label>
+                                    <input type="number" id="highHumidityLoss" class="form-input" step="0.01" min="0" max="100" placeholder="e.g., 15%" required>
+                                </div>
+                                <div class="rate-field">
+                                    <label class="form-label-small" for="midHumidityLoss">Mid</label>
+                                    <input type="number" id="midHumidityLoss" class="form-input" step="0.01" min="0" max="100" placeholder="e.g., 12%" required>
+                                </div>
+                                <div class="rate-field">
+                                    <label class="form-label-small" for="lowHumidityLoss">Low</label>
+                                    <input type="number" id="lowHumidityLoss" class="form-input" step="0.01" min="0" max="100" placeholder="e.g., 10%" required>
+                                </div>
+                            </div>
+                        </div>
                     
                     <div class="form-group">
                         <label class="form-label" for="eggNotes">Notes (optional)</label>
