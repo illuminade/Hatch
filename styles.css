@@ -734,3 +734,9 @@ header h1 {
     background-color: rgba(0, 0, 0, 0.05);
     color: var(--primary-color);
 }
+/* Header Controls */
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
