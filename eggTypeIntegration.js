@@ -115,6 +115,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         const weightValue = parseFloat(document.getElementById('eggWeight').value);
                         const formattedWeight = weightValue.toFixed(2);
                         
+                        // Get humidity loss values
+                        const highHumidity = document.getElementById('highHumidityLoss').value;
+                        const midHumidity = document.getElementById('midHumidityLoss').value;
+                        const lowHumidity = document.getElementById('lowHumidityLoss').value;
+                        
                         const newEgg = {
                             name: document.getElementById('eggName').value,
                             typeId: selectedEggTypeId,
@@ -123,9 +128,9 @@ document.addEventListener('DOMContentLoaded', function() {
                             coefficient: selectedEggType.coefficient,
                             incubationStart: document.getElementById('incubationStart').value,
                             incubationDays: document.getElementById('incubationDays').value,
-                            highHumidityLoss: document.getElementById('highHumidityLoss').value + '%',
-                            midHumidityLoss: document.getElementById('midHumidityLoss').value + '%',
-                            lowHumidityLoss: document.getElementById('lowHumidityLoss').value + '%',
+                            highHumidityLoss: highHumidity + '%',
+                            midHumidityLoss: midHumidity + '%',
+                            lowHumidityLoss: lowHumidity + '%',
                             notes: document.getElementById('eggNotes').value || '',
                             createdAt: firebase.firestore.FieldValue.serverTimestamp()
                         };
@@ -169,6 +174,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         const weightValue = parseFloat(document.getElementById('editEggWeight').value);
                         const formattedWeight = weightValue.toFixed(2);
                         
+                        // Get humidity loss values
+                        const highHumidity = document.getElementById('editHighHumidityLoss').value;
+                        const midHumidity = document.getElementById('editMidHumidityLoss').value;
+                        const lowHumidity = document.getElementById('editLowHumidityLoss').value;
+                        
                         const updatedEgg = {
                             name: document.getElementById('editEggName').value,
                             typeId: selectedEggTypeId,
@@ -177,9 +187,9 @@ document.addEventListener('DOMContentLoaded', function() {
                             coefficient: selectedEggType.coefficient,
                             incubationStart: document.getElementById('editIncubationStart').value,
                             incubationDays: document.getElementById('editIncubationDays').value,
-                            highHumidityLoss: document.getElementById('editHighHumidityLoss').value + '%',
-                            midHumidityLoss: document.getElementById('editMidHumidityLoss').value + '%',
-                            lowHumidityLoss: document.getElementById('editLowHumidityLoss').value + '%',
+                            highHumidityLoss: highHumidity + '%',
+                            midHumidityLoss: midHumidity + '%',
+                            lowHumidityLoss: lowHumidity + '%',
                             notes: document.getElementById('editEggNotes').value || '',
                             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                         };
@@ -229,15 +239,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('editIncubationStart').value = egg.incubationStart;
                 document.getElementById('editIncubationDays').value = egg.incubationDays;
                 document.getElementById('editEggNotes').value = egg.notes || '';
+                
+                // Set humidity loss values - remove % symbol if present
                 if (egg.highHumidityLoss) {
-                document.getElementById('editHighHumidityLoss').value = parseFloat(egg.highHumidityLoss);
-            }
-            if (egg.midHumidityLoss) {
-                document.getElementById('editMidHumidityLoss').value = parseFloat(egg.midHumidityLoss);
-            }
-            if (egg.lowHumidityLoss) {
-                document.getElementById('editLowHumidityLoss').value = parseFloat(egg.lowHumidityLoss);
-            }
+                    document.getElementById('editHighHumidityLoss').value = egg.highHumidityLoss.replace('%', '');
+                }
+                if (egg.midHumidityLoss) {
+                    document.getElementById('editMidHumidityLoss').value = egg.midHumidityLoss.replace('%', '');
+                }
+                if (egg.lowHumidityLoss) {
+                    document.getElementById('editLowHumidityLoss').value = egg.lowHumidityLoss.replace('%', '');
+                }
+                
                 window.navigateTo('editEgg');
             };
         }
