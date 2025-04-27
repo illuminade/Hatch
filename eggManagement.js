@@ -1,6 +1,73 @@
 // eggManagement.js - Fixed version
 console.log("eggManagement.js loading...");
 
+function addNavigation() {
+    // Get the existing settings link
+    const settingsLink = document.getElementById('settingsLink');
+    
+    if (settingsLink) {
+        // Add event listener to the existing link
+        settingsLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Hide all pages
+            document.querySelectorAll('.page').forEach(p => {
+                p.classList.remove('active');
+            });
+            
+            // Show egg management page
+            document.getElementById('eggManagementPage').classList.add('active');
+            document.getElementById('backButton').style.display = 'flex';
+            document.getElementById('addEggButton').style.display = 'none';
+            
+            // Update current page
+            window.previousPage = window.currentPage;
+            window.currentPage = 'eggManagement';
+        });
+    } else {
+        // Only create a new link if one doesn't exist
+        const header = document.querySelector('header');
+        const headerControls = document.querySelector('.header-controls');
+        const navLink = document.createElement('a');
+        navLink.className = 'nav-link';
+        navLink.href = '#';
+        navLink.innerHTML = '<i class="fas fa-cog"></i> Settings';
+        navLink.id = 'settingsLink';
+        
+        // Add to header controls if it exists, otherwise to header
+        if (headerControls) {
+            // Insert before back button if it exists
+            const backBtn = headerControls.querySelector('#backButton');
+            if (backBtn) {
+                headerControls.insertBefore(navLink, backBtn);
+            } else {
+                headerControls.appendChild(navLink);
+            }
+        } else {
+            header.appendChild(navLink);
+        }
+        
+        // Event listener for settings link
+        navLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Hide all pages
+            document.querySelectorAll('.page').forEach(p => {
+                p.classList.remove('active');
+            });
+            
+            // Show egg management page
+            document.getElementById('eggManagementPage').classList.add('active');
+            document.getElementById('backButton').style.display = 'flex';
+            document.getElementById('addEggButton').style.display = 'none';
+            
+            // Update current page
+            window.previousPage = window.currentPage;
+            window.currentPage = 'eggManagement';
+        });
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     console.log("DOM fully loaded for eggManagement.js");
     
