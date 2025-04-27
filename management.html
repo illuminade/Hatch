@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Egg Types Management - Hatch</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <div class="logo">
+                <i class="fas fa-egg"></i>
+                <h1>Hatch</h1>
+            </div>
+            <div class="header-controls">
+                <button id="backToHomeButton" class="back-button">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+            </div>
+        </header>
+        
+        <div class="content">
+            <!-- Egg Management Page -->
+            <div id="eggManagementPage" class="page active">
+                <h2 class="page-title">Egg Types Management</h2>
+                
+                <div class="management-header">
+                    <p>Manage your egg types and their coefficient values.</p>
+                    <button id="addEggTypeBtn" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Add Egg Type
+                    </button>
+                </div>
+                
+                <div id="eggTypesListContainer" class="egg-types-list">
+                    <!-- Egg types will be loaded here -->
+                </div>
+                
+                <div id="eggTypesEmptyState" class="empty-state">
+                    <div class="empty-state-icon">
+                        <i class="fas fa-list"></i>
+                    </div>
+                    <h3>No egg types yet</h3>
+                    <p>Add egg types to make adding new eggs easier</p>
+                    <button id="addFirstEggTypeBtn" class="btn btn-primary">Add First Egg Type</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Egg Type Modal -->
+    <div id="addEggTypeModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add New Egg Type</h3>
+                <button id="closeAddEggTypeModal" class="close-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form id="addEggTypeForm" class="form-container">
+                <div class="form-group">
+                    <label class="form-label" for="eggTypeName">Egg Type Name</label>
+                    <input type="text" id="eggTypeName" class="form-input" placeholder="E.g., Chicken, Duck, etc." required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="coefficientNumber">Coefficient Number</label>
+                    <input type="number" id="coefficientNumber" class="form-input" placeholder="Enter 9 decimal number" step="0.000000001" required>
+                    <div class="form-help">This coefficient is used for advanced calculations and will not be shown elsewhere.</div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="eggTypeNotes">Notes (optional)</label>
+                    <textarea id="eggTypeNotes" class="form-input" rows="2" placeholder="Add any additional information"></textarea>
+                </div>
+                
+                <div class="btn-row">
+                    <button type="button" id="cancelAddEggType" class="btn btn-outline">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Egg Type</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Egg Type Modal -->
+    <div id="editEggTypeModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Egg Type</h3>
+                <button id="closeEditEggTypeModal" class="close-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form id="editEggTypeForm" class="form-container">
+                <input type="hidden" id="editEggTypeId">
+                
+                <div class="form-group">
+                    <label class="form-label" for="editEggTypeName">Egg Type Name</label>
+                    <input type="text" id="editEggTypeName" class="form-input" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="editCoefficientNumber">Coefficient Number</label>
+                    <input type="number" id="editCoefficientNumber" class="form-input" step="0.000000001" required>
+                    <div class="form-help">This coefficient is used for advanced calculations and will not be shown elsewhere.</div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="editEggTypeNotes">Notes (optional)</label>
+                    <textarea id="editEggTypeNotes" class="form-input" rows="2"></textarea>
+                </div>
+                
+                <div class="btn-row">
+                    <button type="button" id="cancelEditEggType" class="btn btn-outline">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+    
+    <!-- Firebase scripts -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    
+    <!-- App scripts -->
+    <script src="firebase-config.js"></script>
+    <script src="management.js"></script>
+</body>
+</html>
