@@ -1,3 +1,31 @@
+function addNavigation() {
+    // Get the existing settings link instead of creating a new one
+    const settingsLink = document.getElementById('settingsLink');
+    
+    if (settingsLink) {
+        // Add event listener to the existing link
+        settingsLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Hide all pages
+            document.querySelectorAll('.page').forEach(p => {
+                p.classList.remove('active');
+            });
+            
+            // Show egg management page
+            document.getElementById('eggManagementPage').classList.add('active');
+            document.getElementById('backButton').style.display = 'flex';
+            document.getElementById('addEggButton').style.display = 'none';
+            
+            // Update current page
+            window.previousPage = window.currentPage;
+            window.currentPage = 'eggManagement';
+        });
+    } else {
+        console.error('Settings link not found in the DOM');
+    }
+}
+
 // eggManagement.js - Completely new version
 // Access existing variables from window object (no destructuring)
 document.addEventListener('DOMContentLoaded', function() {
