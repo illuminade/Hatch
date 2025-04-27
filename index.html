@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="app-container">
@@ -59,7 +59,8 @@
                     <div class="form-group">
                         <label class="form-label" for="eggWeight">Weight (grams)</label>
                         <input type="number" id="eggWeight" class="form-input" placeholder="Weight in grams" step="0.01" min="0" required>
-                    </div>                    
+                    </div>
+                    
                     <div class="form-group">
                         <label class="form-label" for="incubationStart">Incubation Start Date</label>
                         <input type="date" id="incubationStart" class="form-input" required>
@@ -99,8 +100,8 @@
                         <div class="detail-progress-container">
                             <div class="detail-progress-circle">
                                 <svg width="120" height="120" viewBox="0 0 120 120">
-                                    <circle cx="60" cy="60" r="54" fill="none" stroke="#f0f0f0" stroke-width="12" />
-                                    <circle id="progressCircle" cx="60" cy="60" r="54" fill="none" stroke="#8A2BE2" stroke-width="12" 
+                                    <circle cx="60" cy="60" r="54" fill="none" stroke="#EEEEEE" stroke-width="10" />
+                                    <circle id="progressCircle" cx="60" cy="60" r="54" fill="none" stroke="#4CD964" stroke-width="10" 
                                             stroke-dasharray="339.292" stroke-dashoffset="339.292" stroke-linecap="round" />
                                 </svg>
                                 <div class="progress-percentage" id="detailProgressText">0%</div>
@@ -198,10 +199,13 @@
     </div>
     
     <div id="toast" class="toast"></div>
-     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    
+    <!-- Firebase scripts -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    
+    <!-- App scripts -->
     <script src="firebase-config.js"></script>
-    <script src="app.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
