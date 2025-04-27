@@ -43,15 +43,13 @@ body {
 
 /* Header styles */
 header {
-    padding: 16px;
-    background-color: var(--background-color);
-    color: var(--text-primary);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    position: sticky;
+    position: fixed;
     top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
     z-index: 100;
+    background-color: var(--background-color);
     border-bottom: 1px solid var(--border-color);
 }
 
@@ -93,8 +91,10 @@ header h1 {
 
 /* Content styles */
 .content {
-    flex: 1;
-    padding: 16px;
+    padding-top: 70px; /* Adjust this value based on your header height */
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-bottom: 16px;
     overflow-y: auto;
 }
 
@@ -105,6 +105,13 @@ header h1 {
 
 .page.active {
     display: block;
+    position: relative; /* Change from absolute to relative */
+    width: 100%;
+    margin-top: 0; /* Remove the margin-top */
+    height: auto; /* Allow content to determine height */
+    overflow-y: visible;
+    z-index: 10;
+    background: var(--background-color);
 }
 
 .page-title {
