@@ -544,3 +544,30 @@ header h1 {
         align-items: center;
     }
 }
+/* Add this to your styles.css file */
+
+/* Loading indicator */
+.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    padding: 40px 0;
+    color: var(--text-secondary);
+    font-size: 1rem;
+}
+
+.loading::before {
+    content: "";
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(138, 43, 226, 0.2);
+    border-radius: 50%;
+    border-top-color: var(--primary-color);
+    animation: spin 1s ease-in-out infinite;
+    margin-bottom: 15px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
