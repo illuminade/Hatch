@@ -146,3 +146,5 @@ window.updateEggType = async function(eggTypeId, eggTypeData) {
 
 // Initialize by loading egg types
 loadEggTypes();
+
+    });
