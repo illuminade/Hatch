@@ -39,18 +39,25 @@ body {
     position: relative;
     display: flex;
     flex-direction: column;
+    padding-top: 65px; /* Add padding to account for fixed header */
 }
 
 /* Header styles */
 header {
+    padding: 16px;
+    background-color: var(--background-color);
+    color: var(--text-primary);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     width: 100%;
     z-index: 100;
-    background-color: var(--background-color);
     border-bottom: 1px solid var(--border-color);
+    height: 65px;
 }
 
 .logo {
@@ -91,10 +98,8 @@ header h1 {
 
 /* Content styles */
 .content {
-    padding-top: 70px; /* Adjust this value based on your header height */
-    padding-left: 16px;
-    padding-right: 16px;
-    padding-bottom: 16px;
+    flex: 1;
+    padding: 16px;
     overflow-y: auto;
 }
 
@@ -105,16 +110,13 @@ header h1 {
 
 .page.active {
     display: block;
-    position: relative; /* Change from absolute to relative */
+    position: relative;
     width: 100%;
-    margin-top: 0; /* Remove the margin-top */
-    height: auto; /* Allow content to determine height */
-    overflow-y: visible;
-    z-index: 10;
     background: var(--background-color);
 }
 
 .page-title {
+    margin-top: 0;
     margin-bottom: 20px;
     font-weight: 700;
     color: var(--text-primary);
@@ -225,6 +227,24 @@ header h1 {
     color: var(--text-secondary);
     white-space: nowrap;
     font-weight: 500;
+}
+
+/* Humidity rates styling */
+.humidity-rates {
+    display: flex;
+    gap: 10px;
+}
+
+.rate-field {
+    flex: 1;
+}
+
+.form-label-small {
+    display: block;
+    margin-bottom: 4px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
 }
 
 /* Form Styles */
@@ -564,6 +584,7 @@ header h1 {
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
+
 /* Management Page Styles */
 .management-header {
     display: flex;
@@ -741,44 +762,10 @@ header h1 {
     background-color: rgba(0, 0, 0, 0.05);
     color: var(--primary-color);
 }
+
 /* Header Controls */
 .header-controls {
     display: flex;
     align-items: center;
     gap: 10px;
-}
-/* Add this to your CSS file (styles.css) */
-.page {
-    display: none;
-    animation: fadeIn 0.3s ease;
-}
-
-.page.active {
-    display: block;
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    width: 100%;
-    margin-top: 53px; /* Adjust based on your header height */
-    height: calc(100% - 53px); /* Full height minus header */
-    overflow-y: auto;
-    z-index: 10;
-    background: var(--background-color);
-}
-.humidity-rates {
-    display: flex;
-    gap: 10px;
-}
-
-.rate-field {
-    flex: 1;
-}
-
-.form-label-small {
-    display: block;
-    margin-bottom: 4px;
-    font-weight: 500;
-    color: var(--text-secondary);
-    font-size: 0.85rem;
 }
