@@ -1,240 +1,125 @@
-// management.js - JavaScript for egg types management page
-document.addEventListener('DOMContentLoaded', function() {
-    console.log("Egg Types Management page initializing...");
-    
-    // Initialize Firebase collection for egg types
-    const eggTypesCollection = window.db.collection('eggTypes');
-
-    // DOM Elements
-    const eggTypesListContainer = document.getElementById('eggTypesListContainer');
-    const eggTypesEmptyState = document.getElementById('eggTypesEmptyState');
-    const addEggTypeBtn = document.getElementById('addEggTypeBtn');
-    const addFirstEggTypeBtn = document.getElementById('addFirstEggTypeBtn');
-    const addEggTypeModal = document.getElementById('addEggTypeModal');
-    const addEggTypeForm = document.getElementById('addEggTypeForm');
-    const closeAddEggTypeModal = document.getElementById('closeAddEggTypeModal');
-    const cancelAddEggType = document.getElementById('cancelAddEggType');
-    const editEggTypeModal = document.getElementById('editEggTypeModal');
-    const editEggTypeForm = document.getElementById('editEggTypeForm');
-    const closeEditEggTypeModal = document.getElementById('closeEditEggTypeModal');
-    const cancelEditEggType = document.getElementById('cancelEditEggType');
-    const backToHomeButton = document.getElementById('backToHomeButton');
-    const toast = document.getElementById('toast');
-
-    // Array to store egg types
-    let eggTypes = [];
-    let currentEggTypeId = null;
-
-    // Show toast message
-    function showToast(message) {
-        toast.textContent = message;
-        toast.classList.add('show');
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Egg Types Management - Hatch</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <div class="logo">
+                <i class="fas fa-egg"></i>
+                <h1>Hatch</h1>
+            </div>
+            <div class="header-controls">
+                <button id="backToHomeButton" class="back-button">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+            </div>
+        </header>
         
-        setTimeout(() => {
-            toast.classList.remove('show');
-        }, 3000);
-    }
-    
-    // Back button to return to home
-    backToHomeButton.addEventListener('click', function() {
-        window.location.href = 'index.html';
-    });
-
-    // Load egg types from Firebase
-    async function loadEggTypes() {
-        try {
-            console.log("Loading egg types from Firebase...");
-            const snapshot = await eggTypesCollection.orderBy('name').get();
-            eggTypes = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
-            console.log("Loaded egg types:", eggTypes);
-            renderEggTypesList();
-        } catch (error) {
-            showToast('Error loading egg types: ' + error.message);
-            console.error('Error loading egg types:', error);
-        }
-    }
-
-    // Render egg types list
-    function renderEggTypesList() {
-        console.log("Rendering egg types list, count:", eggTypes.length);
-        if (eggTypes.length === 0) {
-            eggTypesListContainer.style.display = 'none';
-            eggTypesEmptyState.style.display = 'flex';
-            return;
-        }
-        
-        eggTypesListContainer.style.display = 'grid';
-        eggTypesEmptyState.style.display = 'none';
-        
-        eggTypesListContainer.innerHTML = '';
-        
-        eggTypes.forEach(eggType => {
-            const eggTypeCard = document.createElement('div');
-            eggTypeCard.className = 'egg-type-card';
-            
-            eggTypeCard.innerHTML = `
-                <div class="header">
-                    <h3>${eggType.name}</h3>
-                    <div class="actions">
-                        <button class="action-btn edit" data-id="${eggType.id}">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="action-btn delete" data-id="${eggType.id}">
-                            <i class="fas fa-trash"></i>
-                        </button>
+        <div class="content">
+            <!-- Egg Management Page -->
+            <div id="eggManagementPage" class="page active">
+                <h2 class="page-title">Egg Types Management</h2>
+                
+                <div class="management-header">
+                    <p>Manage your egg types and their coefficient values.</p>
+                </div>
+                
+                <div id="eggTypesListContainer" class="egg-types-list">
+                    <!-- Egg types will be loaded here -->
+                </div>
+                
+                <div id="eggTypesEmptyState" class="empty-state">
+                    <div class="empty-state-icon">
+                        <i class="fas fa-list"></i>
                     </div>
+                    <h3>No egg types yet</h3>
+                    <p>Add an egg type below to get started</p>
                 </div>
-                <div class="detail-item">
-                    <span class="label">Coefficient:</span>
-                    <span class="value">${parseFloat(eggType.coefficient).toFixed(9)}</span>
+                
+                <!-- Add Egg Type Form (directly on the page) -->
+                <div class="section-divider"></div>
+                
+                <h3 class="section-title">Add New Egg Type</h3>
+                
+                <form id="addEggTypeForm" class="form-container">
+                    <div class="form-group">
+                        <label class="form-label" for="eggTypeName">Egg Type Name</label>
+                        <input type="text" id="eggTypeName" class="form-input" placeholder="E.g., Chicken, Duck, etc." required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="coefficientNumber">Coefficient Number</label>
+                        <input type="number" id="coefficientNumber" class="form-input" placeholder="Enter 9 decimal number" step="0.000000001" required>
+                        <div class="form-help">This coefficient is used for advanced calculations and will not be shown elsewhere.</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="eggTypeNotes">Notes (optional)</label>
+                        <textarea id="eggTypeNotes" class="form-input" rows="2" placeholder="Add any additional information"></textarea>
+                    </div>
+                    
+                    <div class="btn-row">
+                        <button type="submit" class="btn btn-primary">Add Egg Type</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Egg Type Modal (keep this as a modal) -->
+    <div id="editEggTypeModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Egg Type</h3>
+                <button id="closeEditEggTypeModal" class="close-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form id="editEggTypeForm" class="form-container">
+                <input type="hidden" id="editEggTypeId">
+                
+                <div class="form-group">
+                    <label class="form-label" for="editEggTypeName">Egg Type Name</label>
+                    <input type="text" id="editEggTypeName" class="form-input" required>
                 </div>
-                ${eggType.notes ? `<div class="notes">${eggType.notes}</div>` : ''}
-            `;
-            
-            // Add event listeners to buttons
-            const editBtn = eggTypeCard.querySelector('.edit');
-            const deleteBtn = eggTypeCard.querySelector('.delete');
-            
-            editBtn.addEventListener('click', () => {
-                openEditEggTypeModal(eggType.id);
-            });
-            
-            deleteBtn.addEventListener('click', () => {
-                deleteEggType(eggType.id);
-            });
-            
-            eggTypesListContainer.appendChild(eggTypeCard);
-        });
-    }
+                
+                <div class="form-group">
+                    <label class="form-label" for="editCoefficientNumber">Coefficient Number</label>
+                    <input type="number" id="editCoefficientNumber" class="form-input" step="0.000000001" required>
+                    <div class="form-help">This coefficient is used for advanced calculations and will not be shown elsewhere.</div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="editEggTypeNotes">Notes (optional)</label>
+                    <textarea id="editEggTypeNotes" class="form-input" rows="2"></textarea>
+                </div>
+                
+                <div class="btn-row">
+                    <button type="button" id="cancelEditEggType" class="btn btn-outline">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-    // Show Add Egg Type Modal
-    function showAddEggTypeModal() {
-        console.log("Showing Add Egg Type Modal");
-        addEggTypeModal.classList.add('show');
-        addEggTypeForm.reset();
-    }
-
-    // Hide Add Egg Type Modal
-    function hideAddEggTypeModal() {
-        addEggTypeModal.classList.remove('show');
-    }
-
-    // Show Edit Egg Type Modal
-    function showEditEggTypeModal() {
-        editEggTypeModal.classList.add('show');
-    }
-
-    // Hide Edit Egg Type Modal
-    function hideEditEggTypeModal() {
-        editEggTypeModal.classList.remove('show');
-    }
-
-    // Open Edit Egg Type Modal with data
-    function openEditEggTypeModal(eggTypeId) {
-        const eggType = eggTypes.find(type => type.id === eggTypeId);
-        
-        if (!eggType) {
-            showToast('Egg type not found');
-            return;
-        }
-        
-        currentEggTypeId = eggTypeId;
-        
-        document.getElementById('editEggTypeId').value = eggType.id;
-        document.getElementById('editEggTypeName').value = eggType.name;
-        document.getElementById('editCoefficientNumber').value = eggType.coefficient;
-        document.getElementById('editEggTypeNotes').value = eggType.notes || '';
-        
-        showEditEggTypeModal();
-    }
-
-    // Add new egg type
-    async function addEggType(eggTypeData) {
-        try {
-            console.log("Adding new egg type:", eggTypeData);
-            await eggTypesCollection.add(eggTypeData);
-            showToast('Egg type added successfully!');
-            hideAddEggTypeModal();
-            loadEggTypes();
-        } catch (error) {
-            showToast('Error adding egg type: ' + error.message);
-            console.error('Error adding egg type:', error);
-        }
-    }
-
-    // Update egg type
-    async function updateEggType(eggTypeId, eggTypeData) {
-        try {
-            await eggTypesCollection.doc(eggTypeId).update(eggTypeData);
-            showToast('Egg type updated successfully!');
-            hideEditEggTypeModal();
-            loadEggTypes();
-        } catch (error) {
-            showToast('Error updating egg type: ' + error.message);
-            console.error('Error updating egg type:', error);
-        }
-    }
-
-    // Delete egg type
-    async function deleteEggType(eggTypeId) {
-        if (confirm('Are you sure you want to delete this egg type?')) {
-            try {
-                await eggTypesCollection.doc(eggTypeId).delete();
-                showToast('Egg type deleted successfully!');
-                loadEggTypes();
-            } catch (error) {
-                showToast('Error deleting egg type: ' + error.message);
-                console.error('Error deleting egg type:', error);
-            }
-        }
-    }
-
-    // Event Listeners
-    addEggTypeBtn.addEventListener('click', showAddEggTypeModal);
-    addFirstEggTypeBtn.addEventListener('click', showAddEggTypeModal);
-    closeAddEggTypeModal.addEventListener('click', hideAddEggTypeModal);
-    cancelAddEggType.addEventListener('click', hideAddEggTypeModal);
-    closeEditEggTypeModal.addEventListener('click', hideEditEggTypeModal);
-    cancelEditEggType.addEventListener('click', hideEditEggTypeModal);
-
-    // Add Egg Type Form Submission
-    addEggTypeForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const coefficientValue = parseFloat(document.getElementById('coefficientNumber').value);
-        
-        const newEggType = {
-            name: document.getElementById('eggTypeName').value,
-            coefficient: coefficientValue.toFixed(9),
-            notes: document.getElementById('eggTypeNotes').value || '',
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        };
-        
-        await addEggType(newEggType);
-    });
-
-    // Edit Egg Type Form Submission
-    editEggTypeForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const eggTypeId = document.getElementById('editEggTypeId').value;
-        const coefficientValue = parseFloat(document.getElementById('editCoefficientNumber').value);
-        
-        const updatedEggType = {
-            name: document.getElementById('editEggTypeName').value,
-            coefficient: coefficientValue.toFixed(9),
-            notes: document.getElementById('editEggTypeNotes').value || '',
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        };
-        
-        await updateEggType(eggTypeId, updatedEggType);
-    });
-
-    // Initialize the page
-    loadEggTypes();
+    <div id="toast" class="toast"></div>
     
-    console.log("Egg Types Management page initialized");
-});
+    <!-- Firebase scripts -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    
+    <!-- App scripts -->
+    <script src="firebase-config.js"></script>
+    <script src="management.js"></script>
+</body>
+</html>
