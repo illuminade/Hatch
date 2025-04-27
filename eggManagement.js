@@ -1,38 +1,11 @@
-console.log("eggManagement.js loaded");
+// eggManagement.js - Fixed version
+console.log("eggManagement.js loading...");
 
-function addNavigation() {
-    // Get the existing settings link instead of creating a new one
-    const settingsLink = document.getElementById('settingsLink');
-    
-    if (settingsLink) {
-        // Add event listener to the existing link
-        settingsLink.addEventListener('click', function(e) {
-            console.log("Settings link clicked");
-            e.preventDefault();
-            
-            // Hide all pages
-            document.querySelectorAll('.page').forEach(p => {
-                p.classList.remove('active');
-            });
-            
-            // Show egg management page
-            document.getElementById('eggManagementPage').classList.add('active');
-            document.getElementById('backButton').style.display = 'flex';
-            document.getElementById('addEggButton').style.display = 'none';
-            
-            // Update current page
-            window.previousPage = window.currentPage;
-            window.currentPage = 'eggManagement';
-        });
-    } else {
-        console.error('Settings link not found in the DOM');
-    }
-}
-
-// eggManagement.js - Completely new version
-// Access existing variables from window object (no destructuring)
 document.addEventListener('DOMContentLoaded', function() {
+    console.log("DOM fully loaded for eggManagement.js");
+    
     // Initialize Firebase collection for egg types
+    console.log("Initializing egg types collection");
     const eggTypesCollection = window.db.collection('eggTypes');
 
     // DOM Elements for Egg Management
@@ -54,36 +27,17 @@ document.addEventListener('DOMContentLoaded', function() {
     let eggTypes = [];
     let currentEggTypeId = null;
 
-    // Add navigation to header
-    function addNavigation() {
-        // Check if settings link already exists
-        if (document.getElementById('settingsLink')) {
-            return; // Link already exists, don't add again
-        }
+    // Find the settings link and attach an event listener
+    console.log("Setting up settings link event listener");
+    const settingsLink = document.getElementById('settingsLink');
+    if (!settingsLink) {
+        console.error("Settings link not found in the DOM");
+    } else {
+        console.log("Settings link found, adding event listener");
         
-        const header = document.querySelector('header');
-        const headerControls = document.querySelector('.header-controls');
-        const navLink = document.createElement('a');
-        navLink.className = 'nav-link';
-        navLink.href = '#';
-        navLink.innerHTML = '<i class="fas fa-cog"></i> Settings';
-        navLink.id = 'settingsLink';
-        
-        // Add to header controls if it exists, otherwise to header
-        if (headerControls) {
-            // Insert before back button if it exists
-            const backBtn = headerControls.querySelector('#backButton');
-            if (backBtn) {
-                headerControls.insertBefore(navLink, backBtn);
-            } else {
-                headerControls.appendChild(navLink);
-            }
-        } else {
-            header.appendChild(navLink);
-        }
-        
-        // Event listener for settings link
-        navLink.addEventListener('click', function(e) {
+        // Add direct click handler
+        settingsLink.onclick = function(e) {
+            console.log("Settings link clicked");
             e.preventDefault();
             
             // Hide all pages
@@ -92,14 +46,14 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             
             // Show egg management page
-            document.getElementById('eggManagementPage').classList.add('active');
+            eggManagementPage.classList.add('active');
             document.getElementById('backButton').style.display = 'flex';
             document.getElementById('addEggButton').style.display = 'none';
             
             // Update current page
             window.previousPage = window.currentPage;
             window.currentPage = 'eggManagement';
-        });
+        };
     }
 
     // Load egg types from Firebase
@@ -255,8 +209,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Back button behavior for egg management page
-    const originalBackButtonClick = document.getElementById('backButton').onclick;
-    document.getElementById('backButton').onclick = function() {
+    const backButton = document.getElementById('backButton');
+    const originalBackButtonClick = backButton.onclick;
+    backButton.onclick = function() {
+        console.log("Back button clicked, current page:", window.currentPage);
         if (window.currentPage === 'eggManagement') {
             // Hide all pages
             document.querySelectorAll('.page').forEach(p => {
@@ -324,7 +280,10 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateAddEggForm() {
         // Get the egg type input field
         const eggTypeInput = document.getElementById('eggType');
-        if (!eggTypeInput) return; // Exit if element doesn't exist
+        if (!eggTypeInput) {
+            console.log("eggType input field not found");
+            return; // Exit if element doesn't exist
+        }
         
         const eggTypeFormGroup = eggTypeInput.parentElement;
         
@@ -343,7 +302,10 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Same for edit form
         const editEggTypeInput = document.getElementById('editEggType');
-        if (!editEggTypeInput) return; // Exit if element doesn't exist
+        if (!editEggTypeInput) {
+            console.log("editEggType input field not found");
+            return; // Exit if element doesn't exist
+        }
         
         const editEggTypeFormGroup = editEggTypeInput.parentElement;
         
@@ -393,7 +355,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const eggTypeSelect = document.getElementById('eggTypeSelect');
         const editEggTypeSelect = document.getElementById('editEggTypeSelect');
         
-        if (!eggTypeSelect || !editEggTypeSelect) return;
+        if (!eggTypeSelect || !editEggTypeSelect) {
+            console.log("Egg type select elements not found");
+            return;
+        }
         
         // Clear existing options except the first one
         while (eggTypeSelect.options.length > 1) {
@@ -552,7 +517,6 @@ document.addEventListener('DOMContentLoaded', function() {
     async function init() {
         try {
             console.log("Initializing egg management system...");
-            addNavigation();
             await loadEggTypes();
             
             // Wait a bit for the DOM to be fully updated
