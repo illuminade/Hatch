@@ -131,12 +131,18 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
     
-    window.updateEggType = async function(eggTypeId, eggTypeData) {
-        try {
-            await eggTypesCollection.doc(eggTypeId).update(eggTypeData);
-            window.showToast('Egg type updated successfully!');
-            const event = new CustomEvent('hideEditEggTypeModal');
-            document.dispatchEvent(event);
-            loadEggTypes();
-        } catch (error) {
-            window.showToast('Error updating egg type: ' + error.message)
+window.updateEggType = async function(eggTypeId, eggTypeData) {
+    try {
+        await eggTypesCollection.doc(eggTypeId).update(eggTypeData);
+        window.showToast('Egg type updated successfully!');
+        const event = new CustomEvent('hideEditEggTypeModal');
+        document.dispatchEvent(event);
+        loadEggTypes();
+    } catch (error) {
+        window.showToast('Error updating egg type: ' + error.message);
+        console.error('Error updating egg type:', error);
+    }
+};
+
+// Initialize by loading egg types
+loadEggTypes();
