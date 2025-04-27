@@ -206,35 +206,57 @@ async function deleteEggType(eggTypeId) {
 }
 
 // Update navigation function to include egg management page
-const originalNavigateTo = navigateTo;
-navigateTo = function(page) {
-    document.querySelectorAll('.page').forEach(p => {
-        p.classList.remove('active');
-    });
-    
-    if (page === 'eggManagement') {
-        document.getElementById('eggManagementPage').classList.add('active');
-        backButton.style.display = 'flex';
-        addEggButton.style.display = 'none';
-    } else {
-        originalNavigateTo(page);
+document.addEventListener('DOMContentLoaded', function() {
+    // Make sure settings link works
+    const settingsLink = document.getElementById('settingsLink');
+    if (settingsLink) {
+        settingsLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Hide all pages
+            document.querySelectorAll('.page').forEach(p => {
+                p.classList.remove('active');
+            });
+            
+            // Show egg management page
+            document.getElementById('eggManagementPage').classList.add('active');
+            backButton.style.display = 'flex';
+            addEggButton.style.display = 'none';
+            
+            // Update current page
+            window.previousPage = window.currentPage;
+            window.currentPage = 'eggManagement';
+        });
     }
-    
-    window.scrollTo(0, 0);
-    
-    previousPage = currentPage;
-    currentPage = page;
-};
+});
 
 // Update back button behavior
-const originalBackButtonHandler = backButton.onclick;
-backButton.onclick = function() {
-    if (currentPage === 'eggManagement') {
-        navigateTo('home');
-    } else {
-        originalBackButtonHandler();
-    }
-};
+document.addEventListener('DOMContentLoaded', function() {
+    // Original back button behavior
+    const originalClick = backButton.onclick;
+    
+    // Override with new behavior
+    backButton.onclick = function() {
+        if (currentPage === 'eggManagement') {
+            // Hide all pages
+            document.querySelectorAll('.page').forEach(p => {
+                p.classList.remove('active');
+            });
+            
+            // Show home page
+            document.getElementById('homePage').classList.add('active');
+            backButton.style.display = 'none';
+            addEggButton.style.display = 'flex';
+            
+            // Update current page
+            previousPage = currentPage;
+            currentPage = 'home';
+        } else if (originalClick) {
+            // Use original behavior for other pages
+            originalClick.call(this);
+        }
+    };
+});
 
 // Event Listeners for Egg Management Page
 addEggTypeBtn.addEventListener('click', showAddEggTypeModal);
