@@ -202,6 +202,24 @@
                         <label class="form-label" for="editIncubationDays">Incubation Period (days)</label>
                         <input type="number" id="editIncubationDays" class="form-input" required>
                     </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Humidity Loss Rate (%)</label>
+                            <div class="humidity-rates">
+                            <div class="rate-field">
+                                <label class="form-label-small" for="editHighHumidityLoss">High</label>
+                                <input type="number" id="editHighHumidityLoss" class="form-input" step="0.01" min="0" max="100" required>
+                            </div>
+                            <div class="rate-field">
+                                <label class="form-label-small" for="editMidHumidityLoss">Mid</label>
+                                <input type="number" id="editMidHumidityLoss" class="form-input" step="0.01" min="0" max="100" required>
+                            </div>
+                            <div class="rate-field">
+                                <label class="form-label-small" for="editLowHumidityLoss">Low</label>
+                                <input type="number" id="editLowHumidityLoss" class="form-input" step="0.01" min="0" max="100" required>
+                            </div>
+                        </div>
+                    </div>
                     
                     <div class="form-group">
                         <label class="form-label" for="editEggNotes">Notes (optional)</label>
