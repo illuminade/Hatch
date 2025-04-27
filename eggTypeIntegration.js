@@ -2,16 +2,22 @@
 document.addEventListener('DOMContentLoaded', function() {
     console.log("Egg Type Integration module initializing...");
     
+    // DOM Elements
+    const settingsLink = document.getElementById('settingsLink');
+    
+    // Setup settings link
+    if (settingsLink) {
+        settingsLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            window.location.href = 'management.html';
+        });
+    }
+    
     // Update the add egg form to include egg type selection
     function updateAddEggForm() {
-        console.log("Updating add egg form with egg type selection");
-        
         // Get the egg type input field
         const eggTypeInput = document.getElementById('eggType');
-        if (!eggTypeInput) {
-            console.log("Egg type input field not found");
-            return; // Exit if element doesn't exist
-        }
+        if (!eggTypeInput) return; // Exit if element doesn't exist
         
         const eggTypeFormGroup = eggTypeInput.parentElement;
         
@@ -30,10 +36,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Same for edit form
         const editEggTypeInput = document.getElementById('editEggType');
-        if (!editEggTypeInput) {
-            console.log("Edit egg type input field not found");
-            return; // Exit if element doesn't exist
-        }
+        if (!editEggTypeInput) return; // Exit if element doesn't exist
         
         const editEggTypeFormGroup = editEggTypeInput.parentElement;
         
@@ -47,21 +50,22 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
         
         editEggTypeFormGroup.parentNode.replaceChild(editSelectContainer, editEggTypeFormGroup);
-        
-        console.log("Egg type form fields updated");
     }
 
     // Populate egg type select dropdowns
     async function populateEggTypeSelects() {
-        console.log("Populating egg type select dropdowns");
+        // Load egg types from Firebase
+        const eggTypesCollection = window.db.collection('eggTypes');
+        const snapshot = await eggTypesCollection.orderBy('name').get();
+        const eggTypes = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
         
         const eggTypeSelect = document.getElementById('eggTypeSelect');
         const editEggTypeSelect = document.getElementById('editEggTypeSelect');
         
-        if (!eggTypeSelect || !editEggTypeSelect) {
-            console.log("Egg type select dropdowns not found");
-            return;
-        }
+        if (!eggTypeSelect || !editEggTypeSelect) return;
         
         // Clear existing options except the first one
         while (eggTypeSelect.options.length > 1) {
@@ -72,49 +76,30 @@ document.addEventListener('DOMContentLoaded', function() {
             editEggTypeSelect.remove(1);
         }
         
-        // If eggTypes is not yet available, trigger loading
-        if (!window.eggTypes || window.eggTypes.length === 0) {
-            console.log("Egg types not loaded, triggering load");
-            const event = new CustomEvent('loadEggTypes');
-            document.dispatchEvent(event);
-            
-            // Wait a short time for load to complete
-            await new Promise(resolve => setTimeout(resolve, 300));
-        }
-        
         // Add options for each egg type
-        if (window.eggTypes) {
-            window.eggTypes.forEach(eggType => {
-                const option = document.createElement('option');
-                option.value = eggType.id;
-                option.textContent = eggType.name;
-                eggTypeSelect.appendChild(option);
-                
-                const editOption = document.createElement('option');
-                editOption.value = eggType.id;
-                editOption.textContent = eggType.name;
-                editEggTypeSelect.appendChild(editOption);
-            });
+        eggTypes.forEach(eggType => {
+            const option = document.createElement('option');
+            option.value = eggType.id;
+            option.textContent = eggType.name;
+            eggTypeSelect.appendChild(option);
             
-            console.log("Egg type options added to select dropdowns");
-        } else {
-            console.error("eggTypes array not available");
-        }
+            const editOption = document.createElement('option');
+            editOption.value = eggType.id;
+            editOption.textContent = eggType.name;
+            editEggTypeSelect.appendChild(editOption);
+        });
+        
+        return eggTypes;
     }
 
     // Setup form handlers for egg creation and editing
     function setupFormHandlers() {
-        console.log("Setting up form handlers for eggs");
-        
         const addEggForm = document.getElementById('addEggForm');
         const editEggForm = document.getElementById('editEggForm');
         const editEggBtn = document.getElementById('editEggBtn');
         
         if (addEggForm) {
-            // Store the original handler
             const originalAddEggFormSubmit = addEggForm.onsubmit;
-            
-            // Override with new handler
             addEggForm.onsubmit = async function(e) {
                 e.preventDefault();
                 
@@ -122,7 +107,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (eggTypeSelect) {
                     const selectedEggTypeId = eggTypeSelect.value;
                     if (selectedEggTypeId) {
-                        const selectedEggType = window.eggTypes.find(type => type.id === selectedEggTypeId);
+                        // Load egg types to get the selected one
+                        const eggTypesCollection = window.db.collection('eggTypes');
+                        const doc = await eggTypesCollection.doc(selectedEggTypeId).get();
+                        const selectedEggType = { id: doc.id, ...doc.data() };
                         
                         const weightValue = parseFloat(document.getElementById('eggWeight').value);
                         const formattedWeight = weightValue.toFixed(2);
@@ -157,15 +145,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     originalAddEggFormSubmit.call(this, e);
                 }
             };
-            
-            console.log("Add egg form handler set up");
         }
         
         if (editEggForm) {
-            // Store the original handler
             const originalEditEggFormSubmit = editEggForm.onsubmit;
-            
-            // Override with new handler
             editEggForm.onsubmit = async function(e) {
                 e.preventDefault();
                 
@@ -173,7 +156,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (editEggTypeSelect) {
                     const selectedEggTypeId = editEggTypeSelect.value;
                     if (selectedEggTypeId) {
-                        const selectedEggType = window.eggTypes.find(type => type.id === selectedEggTypeId);
+                        // Load egg types to get the selected one
+                        const eggTypesCollection = window.db.collection('eggTypes');
+                        const doc = await eggTypesCollection.doc(selectedEggTypeId).get();
+                        const selectedEggType = { id: doc.id, ...doc.data() };
+                        
                         const eggId = document.getElementById('editEggId').value;
                         
                         const weightValue = parseFloat(document.getElementById('editEggWeight').value);
@@ -209,15 +196,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     originalEditEggFormSubmit.call(this, e);
                 }
             };
-            
-            console.log("Edit egg form handler set up");
         }
         
         if (editEggBtn) {
-            // Store the original handler
             const originalEditBtnClick = editEggBtn.onclick;
-            
-            // Override with new handler
             editEggBtn.onclick = function() {
                 const egg = window.eggs.find(egg => egg.id === window.currentEggId);
                 
@@ -244,15 +226,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 window.navigateTo('editEgg');
             };
-            
-            console.log("Edit egg button handler set up");
         }
     }
 
     // Initialize the integration
     function initIntegration() {
-        console.log("Initializing egg type integration");
-        
         // Update forms to use egg type selection
         updateAddEggForm();
         
@@ -277,7 +255,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Set up form handlers
         setupFormHandlers();
-        console.log("Egg type integration initialized");
     }
 
     // Start initialization after a short delay to ensure other modules are loaded
