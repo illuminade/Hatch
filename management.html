@@ -31,9 +31,6 @@
                 
                 <div class="management-header">
                     <p>Manage your egg types and their coefficient values.</p>
-                    <button id="addEggTypeBtn" class="btn btn-primary">
-                        <i class="fas fa-plus"></i> Add Egg Type
-                    </button>
                 </div>
                 
                 <div id="eggTypesListContainer" class="egg-types-list">
@@ -45,49 +42,40 @@
                         <i class="fas fa-list"></i>
                     </div>
                     <h3>No egg types yet</h3>
-                    <p>Add egg types to make adding new eggs easier</p>
-                    <button id="addFirstEggTypeBtn" class="btn btn-primary">Add First Egg Type</button>
+                    <p>Add an egg type below to get started</p>
                 </div>
+                
+                <!-- Add Egg Type Form (directly on the page) -->
+                <div class="section-divider"></div>
+                
+                <h3 class="section-title">Add New Egg Type</h3>
+                
+                <form id="addEggTypeForm" class="form-container">
+                    <div class="form-group">
+                        <label class="form-label" for="eggTypeName">Egg Type Name</label>
+                        <input type="text" id="eggTypeName" class="form-input" placeholder="E.g., Chicken, Duck, etc." required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="coefficientNumber">Coefficient Number</label>
+                        <input type="number" id="coefficientNumber" class="form-input" placeholder="Enter 9 decimal number" step="0.000000001" required>
+                        <div class="form-help">This coefficient is used for advanced calculations and will not be shown elsewhere.</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="eggTypeNotes">Notes (optional)</label>
+                        <textarea id="eggTypeNotes" class="form-input" rows="2" placeholder="Add any additional information"></textarea>
+                    </div>
+                    
+                    <div class="btn-row">
+                        <button type="submit" class="btn btn-primary">Add Egg Type</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
 
-    <!-- Add Egg Type Modal -->
-    <div id="addEggTypeModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Add New Egg Type</h3>
-                <button id="closeAddEggTypeModal" class="close-btn">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            
-            <form id="addEggTypeForm" class="form-container">
-                <div class="form-group">
-                    <label class="form-label" for="eggTypeName">Egg Type Name</label>
-                    <input type="text" id="eggTypeName" class="form-input" placeholder="E.g., Chicken, Duck, etc." required>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label" for="coefficientNumber">Coefficient Number</label>
-                    <input type="number" id="coefficientNumber" class="form-input" placeholder="Enter 9 decimal number" step="0.000000001" required>
-                    <div class="form-help">This coefficient is used for advanced calculations and will not be shown elsewhere.</div>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label" for="eggTypeNotes">Notes (optional)</label>
-                    <textarea id="eggTypeNotes" class="form-input" rows="2" placeholder="Add any additional information"></textarea>
-                </div>
-                
-                <div class="btn-row">
-                    <button type="button" id="cancelAddEggType" class="btn btn-outline">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Add Egg Type</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Edit Egg Type Modal -->
+    <!-- Edit Egg Type Modal (keep this as a modal) -->
     <div id="editEggTypeModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
