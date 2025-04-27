@@ -13,3 +13,6 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const eggsCollection = db.collection('eggs');
 const eggTypesCollection = db.collection('eggTypes');
+window.db = db;
+window.eggsCollection = eggsCollection;
+window.eggTypesCollection = eggTypesCollection;
