@@ -1,3 +1,5 @@
+console.log("eggManagement.js loaded");
+
 function addNavigation() {
     // Get the existing settings link instead of creating a new one
     const settingsLink = document.getElementById('settingsLink');
@@ -5,6 +7,7 @@ function addNavigation() {
     if (settingsLink) {
         // Add event listener to the existing link
         settingsLink.addEventListener('click', function(e) {
+            console.log("Settings link clicked");
             e.preventDefault();
             
             // Hide all pages
