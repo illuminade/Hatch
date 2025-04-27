@@ -1,18 +1,18 @@
 // At the beginning of eggManagement.js
-// Reference existing app variables and functions
-const { 
-  db, 
-  navigateTo, 
-  showToast, 
-  loadEggs, 
-  showEggDetails, 
-  eggs, 
-  currentEggId,
-  addEggButton,
-  addFirstEggBtn,
-  backButton,
-  eggsCollection
-} = window;
+// Reference existing app variables and functions without redeclaring db
+const navigateTo = window.navigateTo;
+const showToast = window.showToast;
+const loadEggs = window.loadEggs;
+const showEggDetails = window.showEggDetails;
+const eggs = window.eggs;
+const currentEggId = window.currentEggId;
+const addEggButton = window.addEggButton;
+const addFirstEggBtn = window.addFirstEggBtn;
+const backButton = window.backButton;
+const eggsCollection = window.eggsCollection;
+
+// Use the existing db object
+const eggTypesCollection = window.db.collection('eggTypes');
 
 // Initialize Firebase collection for egg types
 const eggTypesCollection = db.collection('eggTypes');
