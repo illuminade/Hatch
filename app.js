@@ -368,3 +368,17 @@ async function initApp() {
 
 // Initialize the app when the DOM is loaded
 document.addEventListener('DOMContentLoaded', initApp);
+
+// Add this at the end of app.js
+// Make necessary functions and variables available globally
+window.db = db;
+window.navigateTo = navigateTo;
+window.showToast = showToast;
+window.loadEggs = loadEggs;
+window.showEggDetails = showEggDetails;
+window.eggs = eggs;
+window.currentEggId = currentEggId;
+window.addEggButton = addEggButton;
+window.addFirstEggBtn = addFirstEggBtn;
+window.backButton = backButton;
+window.eggsCollection = eggsCollection;
