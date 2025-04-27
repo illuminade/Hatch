@@ -183,3 +183,58 @@ document.addEventListener('DOMContentLoaded', function() {
         if (confirm('Are you sure you want to delete this egg type?')) {
             try {
                 await eggTypesCollection.doc(eggTypeId).delete();
+                showToast('Egg type deleted successfully!');
+                loadEggTypes();
+            } catch (error) {
+                showToast('Error deleting egg type: ' + error.message);
+                console.error('Error deleting egg type:', error);
+            }
+        }
+    }
+
+    // Event Listeners
+    addEggTypeBtn.addEventListener('click', showAddEggTypeModal);
+    addFirstEggTypeBtn.addEventListener('click', showAddEggTypeModal);
+    closeAddEggTypeModal.addEventListener('click', hideAddEggTypeModal);
+    cancelAddEggType.addEventListener('click', hideAddEggTypeModal);
+    closeEditEggTypeModal.addEventListener('click', hideEditEggTypeModal);
+    cancelEditEggType.addEventListener('click', hideEditEggTypeModal);
+
+    // Add Egg Type Form Submission
+    addEggTypeForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const coefficientValue = parseFloat(document.getElementById('coefficientNumber').value);
+        
+        const newEggType = {
+            name: document.getElementById('eggTypeName').value,
+            coefficient: coefficientValue.toFixed(9),
+            notes: document.getElementById('eggTypeNotes').value || '',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        
+        await addEggType(newEggType);
+    });
+
+    // Edit Egg Type Form Submission
+    editEggTypeForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const eggTypeId = document.getElementById('editEggTypeId').value;
+        const coefficientValue = parseFloat(document.getElementById('editCoefficientNumber').value);
+        
+        const updatedEggType = {
+            name: document.getElementById('editEggTypeName').value,
+            coefficient: coefficientValue.toFixed(9),
+            notes: document.getElementById('editEggTypeNotes').value || '',
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        
+        await updateEggType(eggTypeId, updatedEggType);
+    });
+
+    // Initialize the page
+    loadEggTypes();
+    
+    console.log("Egg Types Management page initialized");
+});
