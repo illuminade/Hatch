@@ -178,6 +178,9 @@ addEggForm.addEventListener('submit', async (e) => {
         weight: formattedWeight,
         incubationStart: document.getElementById('incubationStart').value,
         incubationDays: document.getElementById('incubationDays').value,
+        highHumidityLoss: document.getElementById('highHumidityLoss').value + '%',
+        midHumidityLoss: document.getElementById('midHumidityLoss').value + '%',
+        lowHumidityLoss: document.getElementById('lowHumidityLoss').value + '%',
         notes: document.getElementById('eggNotes').value || '',
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
     };
@@ -206,6 +209,18 @@ editEggBtn.addEventListener('click', () => {
     document.getElementById('editEggWeight').value = egg.weight;
     document.getElementById('editIncubationStart').value = egg.incubationStart;
     document.getElementById('editIncubationDays').value = egg.incubationDays;
+    
+    // Set humidity loss values if they exist, otherwise use defaults
+    if (egg.highHumidityLoss) {
+        document.getElementById('editHighHumidityLoss').value = parseFloat(egg.highHumidityLoss);
+    }
+    if (egg.midHumidityLoss) {
+        document.getElementById('editMidHumidityLoss').value = parseFloat(egg.midHumidityLoss);
+    }
+    if (egg.lowHumidityLoss) {
+        document.getElementById('editLowHumidityLoss').value = parseFloat(egg.lowHumidityLoss);
+    }
+    
     document.getElementById('editEggNotes').value = egg.notes || '';
     
     navigateTo('editEgg');
@@ -225,6 +240,9 @@ editEggForm.addEventListener('submit', async (e) => {
         weight: formattedWeight,
         incubationStart: document.getElementById('editIncubationStart').value,
         incubationDays: document.getElementById('editIncubationDays').value,
+        highHumidityLoss: document.getElementById('editHighHumidityLoss').value + '%',
+        midHumidityLoss: document.getElementById('editMidHumidityLoss').value + '%',
+        lowHumidityLoss: document.getElementById('editLowHumidityLoss').value + '%',
         notes: document.getElementById('editEggNotes').value || '',
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     };
@@ -332,6 +350,11 @@ function showEggDetails(eggId) {
     document.getElementById('detailProgressText').textContent = `${progress}%`;
     document.getElementById('detailDaysRemaining').textContent = daysRemaining > 0 ? `${daysRemaining} days remaining` : 'Ready to hatch!';
     document.getElementById('detailNotes').textContent = egg.notes || 'No notes added.';
+    
+    // Update humidity loss rates if they exist
+    document.getElementById('detailHighHumidity').textContent = egg.highHumidityLoss || 'Not set';
+    document.getElementById('detailMidHumidity').textContent = egg.midHumidityLoss || 'Not set';
+    document.getElementById('detailLowHumidity').textContent = egg.lowHumidityLoss || 'Not set';
     
     // Update circular progress
     updateCircularProgress(progress);
