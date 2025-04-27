@@ -1,5 +1,8 @@
-// Store eggs in local storage
-let eggs = JSON.parse(localStorage.getItem('hatch_eggs')) || [];
+// Global variables
+let eggs = [];
+let currentPage = 'home';
+let previousPage = '';
+let currentEggId = null;
 
 // DOM Elements
 const homePage = document.getElementById('homePage');
@@ -20,22 +23,14 @@ const deleteEggBtn = document.getElementById('deleteEggBtn');
 const toast = document.getElementById('toast');
 const progressCircle = document.getElementById('progressCircle');
 
-// Navigation
-let currentPage = 'home';
-let previousPage = '';
-let currentEggId = null;
-
 // Navigation function
 function navigateTo(page) {
-    // Hide all pages
     document.querySelectorAll('.page').forEach(p => {
         p.classList.remove('active');
     });
     
-    // Show the target page
     document.getElementById(page + 'Page').classList.add('active');
     
-    // Update back button visibility
     if (page === 'home') {
         backButton.style.display = 'none';
         addEggButton.style.display = 'flex';
@@ -48,7 +43,6 @@ function navigateTo(page) {
         }
     }
     
-    // Scroll to top
     window.scrollTo(0, 0);
     
     previousPage = currentPage;
@@ -65,11 +59,6 @@ backButton.addEventListener('click', () => {
         navigateTo('eggDetails');
     }
 });
-
-// Generate a unique ID
-function generateId() {
-    return Date.now().toString(36) + Math.random().toString(36).substr(2);
-}
 
 // Format date for display
 function formatDate(dateString) {
@@ -127,17 +116,12 @@ function showToast(message) {
 
 // Update the circular progress display in the details view
 function updateCircularProgress(percent) {
-    // Circle circumference calculation (2πr)
     const circumference = 2 * Math.PI * 54;
-    
-    // Calculate the dashoffset value based on percentage
     const dashoffset = circumference - (percent / 100) * circumference;
     
-    // Update the dasharray and dashoffset properties
     progressCircle.style.strokeDasharray = circumference;
     progressCircle.style.strokeDashoffset = dashoffset;
     
-    // Change the color based on progress
     if (percent < 33) {
         progressCircle.style.stroke = '#8A2BE2'; // Purple for early stage
     } else if (percent < 66) {
@@ -147,15 +131,28 @@ function updateCircularProgress(percent) {
     }
 }
 
-// Add event listeners
+// Load eggs from Firebase
+async function loadEggs() {
+    try {
+        const snapshot = await eggsCollection.orderBy('createdAt', 'desc').get();
+        eggs = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+        renderEggList();
+    } catch (error) {
+        showToast('Error loading eggs: ' + error.message);
+        console.error('Error loading eggs:', error);
+    }
+}
+
+// Event listeners
 addEggButton.addEventListener('click', () => {
-    // Set today's date as default
     document.getElementById('incubationStart').valueAsDate = new Date();
     navigateTo('addEgg');
 });
 
 addFirstEggBtn.addEventListener('click', () => {
-    // Set today's date as default
     document.getElementById('incubationStart').valueAsDate = new Date();
     navigateTo('addEgg');
 });
@@ -168,34 +165,38 @@ cancelEditEgg.addEventListener('click', () => {
     navigateTo('eggDetails');
 });
 
-// Add new egg
-addEggForm.addEventListener('submit', (e) => {
+// Add new egg with Firebase
+addEggForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     
     const weightValue = parseFloat(document.getElementById('eggWeight').value);
-    const formattedWeight = weightValue.toFixed(2); // Format to 2 decimal places
+    const formattedWeight = weightValue.toFixed(2);
     
     const newEgg = {
-        id: generateId(),
         name: document.getElementById('eggName').value,
         type: document.getElementById('eggType').value,
-        weight: formattedWeight, // Store formatted weight
+        weight: formattedWeight,
         incubationStart: document.getElementById('incubationStart').value,
         incubationDays: document.getElementById('incubationDays').value,
         notes: document.getElementById('eggNotes').value || '',
-        createdAt: new Date().toISOString()
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
     };
     
-    eggs.push(newEgg);
-    localStorage.setItem('hatch_eggs', JSON.stringify(eggs));
-    
-    showToast('Egg added successfully!');
-    navigateTo('home');
-    renderEggList();
-    addEggForm.reset();
+    try {
+        // Add to Firebase
+        await eggsCollection.add(newEgg);
+        
+        showToast('Egg added successfully!');
+        navigateTo('home');
+        loadEggs();
+        addEggForm.reset();
+    } catch (error) {
+        showToast('Error adding egg: ' + error.message);
+        console.error('Error adding egg:', error);
+    }
 });
 
-// Edit egg
+// Edit egg button
 editEggBtn.addEventListener('click', () => {
     const egg = eggs.find(egg => egg.id === currentEggId);
     
@@ -205,50 +206,57 @@ editEggBtn.addEventListener('click', () => {
     document.getElementById('editEggWeight').value = egg.weight;
     document.getElementById('editIncubationStart').value = egg.incubationStart;
     document.getElementById('editIncubationDays').value = egg.incubationDays;
-    document.getElementById('editEggNotes').value = egg.notes;
+    document.getElementById('editEggNotes').value = egg.notes || '';
     
     navigateTo('editEgg');
 });
 
-// Save edited egg
-editEggForm.addEventListener('submit', (e) => {
+// Save edited egg with Firebase
+editEggForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     
     const eggId = document.getElementById('editEggId').value;
-    const eggIndex = eggs.findIndex(egg => egg.id === eggId);
+    const weightValue = parseFloat(document.getElementById('editEggWeight').value);
+    const formattedWeight = weightValue.toFixed(2);
     
-    if (eggIndex !== -1) {
-        const weightValue = parseFloat(document.getElementById('editEggWeight').value);
-        const formattedWeight = weightValue.toFixed(2); // Format to 2 decimal places
-        
-        eggs[eggIndex] = {
-            ...eggs[eggIndex],
-            name: document.getElementById('editEggName').value,
-            type: document.getElementById('editEggType').value,
-            weight: formattedWeight, // Store formatted weight
-            incubationStart: document.getElementById('editIncubationStart').value,
-            incubationDays: document.getElementById('editIncubationDays').value,
-            notes: document.getElementById('editEggNotes').value || '',
-            updatedAt: new Date().toISOString()
-        };
-        
-        localStorage.setItem('hatch_eggs', JSON.stringify(eggs));
+    const updatedEgg = {
+        name: document.getElementById('editEggName').value,
+        type: document.getElementById('editEggType').value,
+        weight: formattedWeight,
+        incubationStart: document.getElementById('editIncubationStart').value,
+        incubationDays: document.getElementById('editIncubationDays').value,
+        notes: document.getElementById('editEggNotes').value || '',
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    
+    try {
+        // Update in Firebase
+        await eggsCollection.doc(eggId).update(updatedEgg);
         
         showToast('Egg updated successfully!');
+        await loadEggs(); // Reload eggs to get the updated data
         showEggDetails(eggId);
         navigateTo('eggDetails');
+    } catch (error) {
+        showToast('Error updating egg: ' + error.message);
+        console.error('Error updating egg:', error);
     }
 });
 
-// Delete egg
-deleteEggBtn.addEventListener('click', () => {
+// Delete egg with Firebase
+deleteEggBtn.addEventListener('click', async () => {
     if (confirm('Are you sure you want to delete this egg?')) {
-        eggs = eggs.filter(egg => egg.id !== currentEggId);
-        localStorage.setItem('hatch_eggs', JSON.stringify(eggs));
-        
-        showToast('Egg deleted successfully!');
-        navigateTo('home');
-        renderEggList();
+        try {
+            // Delete from Firebase
+            await eggsCollection.doc(currentEggId).delete();
+            
+            showToast('Egg deleted successfully!');
+            navigateTo('home');
+            loadEggs();
+        } catch (error) {
+            showToast('Error deleting egg: ' + error.message);
+            console.error('Error deleting egg:', error);
+        }
     }
 });
 
@@ -263,14 +271,9 @@ function renderEggList() {
     eggListContainer.style.display = 'grid';
     emptyState.style.display = 'none';
     
-    // Sort eggs by creation date (newest first)
-    const sortedEggs = [...eggs].sort((a, b) => 
-        new Date(b.createdAt) - new Date(a.createdAt)
-    );
-    
     eggListContainer.innerHTML = '';
     
-    sortedEggs.forEach(egg => {
+    eggs.forEach(egg => {
         const progress = calculateProgress(egg.incubationStart, egg.incubationDays);
         
         const eggCard = document.createElement('div');
@@ -337,21 +340,29 @@ function showEggDetails(eggId) {
 }
 
 // Initialize the app
-function initApp() {
+async function initApp() {
     // Set current date for date inputs
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('incubationStart').value = today;
     
-    // Render egg list
-    renderEggList();
-    
-    // Show/hide empty state
-    if (eggs.length === 0) {
-        eggListContainer.style.display = 'none';
-        emptyState.style.display = 'flex';
-    } else {
-        eggListContainer.style.display = 'grid';
-        emptyState.style.display = 'none';
+    try {
+        // Show loading state
+        eggListContainer.innerHTML = '<div class="loading">Loading eggs...</div>';
+        
+        // Load eggs from Firebase
+        await loadEggs();
+        
+        // Show/hide empty state
+        if (eggs.length === 0) {
+            eggListContainer.style.display = 'none';
+            emptyState.style.display = 'flex';
+        } else {
+            eggListContainer.style.display = 'grid';
+            emptyState.style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Error initializing app:', error);
+        showToast('Error loading eggs. Please try again.');
     }
 }
 
