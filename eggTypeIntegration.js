@@ -120,6 +120,28 @@ document.addEventListener('DOMContentLoaded', function() {
                         const midHumidity = document.getElementById('midHumidityLoss').value;
                         const lowHumidity = document.getElementById('lowHumidityLoss').value;
                         
+                        // Calculate initial dailyWeights array
+                        const incubationDays = parseInt(document.getElementById('incubationDays').value);
+                        const startDate = new Date(document.getElementById('incubationStart').value);
+                        const totalWeightLoss = weightValue * (parseFloat(midHumidity) / 100);
+                        const dailyWeightLoss = totalWeightLoss / incubationDays;
+                        
+                        // Create the dailyWeights array
+                        const dailyWeights = [];
+                        for (let day = 0; day <= incubationDays; day++) {
+                            const currentDate = new Date(startDate);
+                            currentDate.setDate(startDate.getDate() + day);
+                            
+                            const targetWeight = weightValue - (dailyWeightLoss * day);
+                            
+                            dailyWeights.push({
+                                day: day,
+                                date: currentDate.toISOString().split('T')[0],
+                                weight: day === 0 ? weightValue : null,
+                                targetWeight: parseFloat(targetWeight.toFixed(2))
+                            });
+                        }
+                        
                         const newEgg = {
                             name: document.getElementById('eggName').value,
                             typeId: selectedEggTypeId,
@@ -127,11 +149,12 @@ document.addEventListener('DOMContentLoaded', function() {
                             weight: formattedWeight,
                             coefficient: selectedEggType.coefficient,
                             incubationStart: document.getElementById('incubationStart').value,
-                            incubationDays: document.getElementById('incubationDays').value,
+                            incubationDays: incubationDays,
                             highHumidityLoss: highHumidity + '%',
                             midHumidityLoss: midHumidity + '%',
                             lowHumidityLoss: lowHumidity + '%',
                             notes: document.getElementById('eggNotes').value || '',
+                            dailyWeights: dailyWeights, // Add the dailyWeights array
                             createdAt: firebase.firestore.FieldValue.serverTimestamp()
                         };
                         
@@ -171,6 +194,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         
                         const eggId = document.getElementById('editEggId').value;
                         
+                        // Get the current egg to compare values
+                        const currentEgg = window.eggs.find(egg => egg.id === eggId);
+                        
                         const weightValue = parseFloat(document.getElementById('editEggWeight').value);
                         const formattedWeight = weightValue.toFixed(2);
                         
@@ -179,18 +205,67 @@ document.addEventListener('DOMContentLoaded', function() {
                         const midHumidity = document.getElementById('editMidHumidityLoss').value;
                         const lowHumidity = document.getElementById('editLowHumidityLoss').value;
                         
+                        // Get incubation values
+                        const incubationDays = parseInt(document.getElementById('editIncubationDays').value);
+                        const incubationStart = document.getElementById('editIncubationStart').value;
+                        
+                        // Check if key values changed that would affect daily weights
+                        const weightChanged = parseFloat(currentEgg.weight) !== weightValue;
+                        const daysChanged = parseInt(currentEgg.incubationDays) !== incubationDays;
+                        const startDateChanged = currentEgg.incubationStart !== incubationStart;
+                        const midHumidityChanged = currentEgg.midHumidityLoss ? 
+                            parseFloat(currentEgg.midHumidityLoss.replace('%', '')) !== parseFloat(midHumidity) : true;
+                        
+                        let dailyWeights = currentEgg.dailyWeights || [];
+                        
+                        // If any key values changed, recalculate the target weights
+                        if (weightChanged || daysChanged || startDateChanged || midHumidityChanged || !dailyWeights.length) {
+                            // Calculate updated dailyWeights array
+                            const startDate = new Date(incubationStart);
+                            const totalWeightLoss = weightValue * (parseFloat(midHumidity) / 100);
+                            const dailyWeightLoss = totalWeightLoss / incubationDays;
+                            
+                            // Create new dailyWeights array while preserving existing weight entries
+                            const newDailyWeights = [];
+                            for (let day = 0; day <= incubationDays; day++) {
+                                const currentDate = new Date(startDate);
+                                currentDate.setDate(startDate.getDate() + day);
+                                
+                                const targetWeight = weightValue - (dailyWeightLoss * day);
+                                
+                                // Try to preserve existing weight entry if available
+                                let existingWeight = null;
+                                if (currentEgg.dailyWeights && day < currentEgg.dailyWeights.length) {
+                                    existingWeight = currentEgg.dailyWeights[day].weight;
+                                }
+                                
+                                // For day 0, always use the initial weight
+                                const dayWeight = day === 0 ? weightValue : existingWeight;
+                                
+                                newDailyWeights.push({
+                                    day: day,
+                                    date: currentDate.toISOString().split('T')[0],
+                                    weight: dayWeight,
+                                    targetWeight: parseFloat(targetWeight.toFixed(2))
+                                });
+                            }
+                            
+                            dailyWeights = newDailyWeights;
+                        }
+                        
                         const updatedEgg = {
                             name: document.getElementById('editEggName').value,
                             typeId: selectedEggTypeId,
                             type: selectedEggType.name,
                             weight: formattedWeight,
                             coefficient: selectedEggType.coefficient,
-                            incubationStart: document.getElementById('editIncubationStart').value,
-                            incubationDays: document.getElementById('editIncubationDays').value,
+                            incubationStart: incubationStart,
+                            incubationDays: incubationDays,
                             highHumidityLoss: highHumidity + '%',
                             midHumidityLoss: midHumidity + '%',
                             lowHumidityLoss: lowHumidity + '%',
                             notes: document.getElementById('editEggNotes').value || '',
+                            dailyWeights: dailyWeights, // Add the updated dailyWeights array
                             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                         };
                         
