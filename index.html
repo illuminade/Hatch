@@ -173,6 +173,25 @@
                             <div id="detailLowHumidity" class="detail-value">10%</div>
                         </div>
                     </div>
+
+                    <div class="detail-info-card">
+                        <h3>Daily Weight Tracking</h3>
+                        <div class="table-container">
+                            <table id="dailyWeightTable" class="weight-table">
+                                <thead>
+                                    <tr>
+                                        <th>Day</th>
+                                        <th>Date</th>
+                                        <th>Weight (g)</th>
+                                        <th>Target Weight</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dailyWeightTableBody">
+                                    <!-- Daily weight rows will be added here dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                     
                     <div class="detail-info-card">
                         <h3>Notes</h3>
@@ -269,5 +288,6 @@
     <script src="app.js"></script>
     <script src="settings.js"></script>
     <script src="eggTypeIntegration.js"></script>
+    <script src="eggWeightTracking.js"></script>
 </body>
 </html>
