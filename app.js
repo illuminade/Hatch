@@ -359,6 +359,15 @@ function showEggDetails(eggId) {
     // Update circular progress
     updateCircularProgress(progress);
     
+    // Dispatch event for egg details loaded
+    const event = new CustomEvent('eggDetailsLoaded', { 
+        detail: { 
+            eggId: eggId,
+            eggData: egg
+        } 
+    });
+    document.dispatchEvent(event);
+    
     navigateTo('eggDetails');
 }
 
