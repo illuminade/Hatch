@@ -147,15 +147,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
             
-            // Create the row content
+            // Create the row content with clickable weight cell
             row.innerHTML = `
                 <td>${dayData.day}</td>
                 <td>${formattedDate}</td>
-                <td>
-                    <input type="number" class="weight-input ${weightClassname}" 
-                           id="weight-day-${dayData.day}"
-                           value="${dayData.weight !== null ? dayData.weight : ''}" 
-                           placeholder="Enter weight" step="0.01" min="0">
+                <td class="editable-weight" data-day="${dayData.day}">
+                    <span class="weight-display ${weightClassname}">${dayData.weight !== null ? dayData.weight : 'Click to add'}</span>
                 </td>
                 <td>${dayData.targetWeight.toFixed(2)} g</td>
             `;
@@ -164,25 +161,78 @@ document.addEventListener('DOMContentLoaded', function() {
             dailyWeightTableBody.appendChild(row);
         });
         
-        // Make rows clickable to focus on the input
-        const rows = dailyWeightTableBody.querySelectorAll('.weight-row');
-        rows.forEach(row => {
-            row.addEventListener('click', function(e) {
-                // Don't trigger if clicking on the input
-                if (e.target.tagName !== 'INPUT') {
-                    const day = parseInt(this.dataset.day);
-                    const input = document.getElementById(`weight-day-${day}`);
-                    if (input) {
-                        input.focus();
-                    }
-                }
-            });
+        // Add click event to editable weight cells
+        const editableCells = dailyWeightTableBody.querySelectorAll('.editable-weight');
+        editableCells.forEach(cell => {
+            cell.addEventListener('click', makeWeightCellEditable);
         });
         
         // Make sure the update button is visible
         if (updateWeightsBtn) {
             updateWeightsBtn.style.display = 'inline-flex';
         }
+    }
+    
+    // Make a weight cell editable on click
+    function makeWeightCellEditable(e) {
+        // Don't do anything if we're already editing
+        if (e.currentTarget.querySelector('input')) {
+            return;
+        }
+        
+        const day = parseInt(e.currentTarget.dataset.day);
+        const displaySpan = e.currentTarget.querySelector('.weight-display');
+        const currentValue = displaySpan.textContent;
+        
+        // Create input element
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.className = 'weight-input';
+        input.id = `weight-day-${day}`;
+        input.step = '0.01';
+        input.min = '0';
+        input.value = currentValue !== 'Click to add' ? currentValue : '';
+        input.placeholder = 'Enter weight';
+        
+        // Replace span with input
+        displaySpan.style.display = 'none';
+        e.currentTarget.appendChild(input);
+        
+        // Focus the input
+        input.focus();
+        
+        // Add event listeners for input
+        input.addEventListener('blur', function() {
+            // When input loses focus, restore display but with updated value if entered
+            finishWeightEditing(e.currentTarget, input, displaySpan);
+        });
+        
+        input.addEventListener('keypress', function(e) {
+            // Submit on Enter key
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                finishWeightEditing(e.currentTarget, input, displaySpan);
+            }
+        });
+    }
+    
+    // Finish weight editing, update display
+    function finishWeightEditing(cell, input, displaySpan) {
+        if (input.value) {
+            // Format value to 2 decimal places
+            const formattedValue = parseFloat(input.value).toFixed(2);
+            displaySpan.textContent = formattedValue;
+            
+            // Mark cell as having unsaved changes
+            cell.classList.add('unsaved-changes');
+        } else {
+            // If no value, restore original text
+            displaySpan.textContent = 'Click to add';
+        }
+        
+        // Show display span and remove input
+        displaySpan.style.display = '';
+        cell.removeChild(input);
     }
     
     // Save all weights
@@ -204,20 +254,25 @@ document.addEventListener('DOMContentLoaded', function() {
         const updatedDailyWeights = JSON.parse(JSON.stringify(currentEggData.dailyWeights));
         let hasChanges = false;
         
-        // Go through each day and check for updates
-        for (let i = 0; i < updatedDailyWeights.length; i++) {
-            const input = document.getElementById(`weight-day-${i}`);
-            if (input && input.value) {
-                const newWeight = parseFloat(input.value);
+        // Go through each editable cell and check for updates
+        const editableCells = dailyWeightTableBody.querySelectorAll('.editable-weight');
+        editableCells.forEach(cell => {
+            const day = parseInt(cell.dataset.day);
+            const displaySpan = cell.querySelector('.weight-display');
+            const weightText = displaySpan.textContent;
+            
+            // Only update if there's a valid weight and not the placeholder
+            if (weightText && weightText !== 'Click to add') {
+                const newWeight = parseFloat(weightText);
                 const formattedWeight = parseFloat(newWeight.toFixed(2));
                 
                 // Check if the weight has changed
-                if (updatedDailyWeights[i].weight !== formattedWeight) {
-                    updatedDailyWeights[i].weight = formattedWeight;
+                if (updatedDailyWeights[day].weight !== formattedWeight) {
+                    updatedDailyWeights[day].weight = formattedWeight;
                     hasChanges = true;
                 }
             }
-        }
+        });
         
         // Only update if there are changes
         if (hasChanges) {
