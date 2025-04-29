@@ -18,8 +18,21 @@ document.addEventListener('DOMContentLoaded', function() {
         .${INTERPOLATED_WEIGHT_CLASS}.weight-deviation-low {
             color: rgba(76, 217, 100, 0.7);
         }
+        
+        /* Add a class to mark cells for weight removal */
+        .weight-to-remove {
+            position: relative;
+        }
+        
+        .weight-to-remove .weight-display {
+            text-decoration: line-through;
+            opacity: 0.7;
+        }
     `;
     document.head.appendChild(styleElement);
+    
+    // Keep track of weights to be removed
+    const weightsToRemove = new Set();
     
     // Direct modification of the original weight tracking code
     // We'll check every 300ms for the weight tracking module
@@ -30,7 +43,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // Give up after 20 attempts (6 seconds)
         if (attemptCount > 20) {
             clearInterval(initInterval);
-            console.error("Could not initialize egg weight interpolation");
             return;
         }
         
@@ -41,7 +53,12 @@ document.addEventListener('DOMContentLoaded', function() {
             // Override the weight update function
             const originalSaveWeights = window.eggWeightTracking.saveAllWeights;
             window.eggWeightTracking.saveAllWeights = async function() {
-                // First save the user-entered weights
+                // First process any weights that need to be removed
+                if (weightsToRemove.size > 0) {
+                    await processWeightRemovals();
+                }
+                
+                // Then save the user-entered weights
                 await originalSaveWeights.call(this);
                 
                 // Then perform interpolation
@@ -52,38 +69,87 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             };
             
-            // Override the finishWeightEditing function to handle empty values
-            if (window.eggWeightTracking.finishWeightEditing) {
-                const originalFinishEditing = window.eggWeightTracking.finishWeightEditing;
-                window.eggWeightTracking.finishWeightEditing = function(cell, input, displaySpan) {
-                    // If the input is empty, mark it for removal
-                    if (!input.value || input.value.trim() === '') {
-                        // Display "Click to add" text
-                        displaySpan.textContent = 'Click to add';
-                        displaySpan.style.display = '';
-                        
-                        // Remove styles
-                        displaySpan.classList.remove(INTERPOLATED_WEIGHT_CLASS, 'weight-deviation-high', 'weight-deviation-low');
-                        
-                        // Mark for removal
-                        const day = parseInt(cell.dataset.day);
-                        if (!isNaN(day) && window.currentEggId) {
-                            setTimeout(function() {
-                                removeWeight(day);
-                            }, 100);
-                        }
-                        
-                        // Remove the input
-                        if (input.parentNode) {
-                            input.parentNode.removeChild(input);
-                        }
-                        
-                        return true;
+            // Add custom cell editing function for weight removal
+            window.eggWeightTracking.makeWeightCellEditableWithRemoval = function(event) {
+                const cell = event.currentTarget;
+                const displaySpan = cell.querySelector('.weight-display');
+                
+                // Don't do anything if we're already editing this cell
+                if (cell.querySelector('input')) {
+                    return;
+                }
+                
+                // Stop event propagation to prevent other handlers
+                event.stopPropagation();
+                
+                const day = parseInt(cell.dataset.day);
+                const currentValue = displaySpan.textContent;
+                
+                // Create input element
+                const input = document.createElement('input');
+                input.type = 'number';
+                input.className = 'weight-input';
+                input.id = `weight-day-${day}`;
+                input.step = '0.01';
+                input.min = '0';
+                input.value = currentValue !== 'Click to add' ? currentValue : '';
+                input.placeholder = 'Enter weight';
+                
+                // Add a delete button
+                const deleteBtn = document.createElement('button');
+                deleteBtn.type = 'button';
+                deleteBtn.className = 'weight-delete-btn';
+                deleteBtn.style.cssText = 'position: absolute; right: -30px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #FF3B30; cursor: pointer; font-size: 1rem;';
+                deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+                deleteBtn.title = 'Clear weight';
+                
+                // Replace span with input
+                displaySpan.style.display = 'none';
+                cell.appendChild(input);
+                cell.appendChild(deleteBtn);
+                
+                // Focus the input
+                input.focus();
+                
+                // Add event listeners for input
+                input.addEventListener('keypress', function(e) {
+                    // Submit on Enter key
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        finishWeightEditingWithRemoval(cell, input, displaySpan, false);
                     }
+                });
+                
+                // Delete button to clear weight
+                deleteBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
                     
-                    // Otherwise use the original function
-                    return originalFinishEditing.call(this, cell, input, displaySpan);
-                };
+                    // Clear the input and mark for removal
+                    input.value = '';
+                    finishWeightEditingWithRemoval(cell, input, displaySpan, true);
+                });
+                
+                // Prevent input events from bubbling up
+                input.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
+            };
+            
+            // Override the original cell click handler
+            const dailyWeightTableBody = document.getElementById('dailyWeightTableBody');
+            if (dailyWeightTableBody) {
+                // Remove any existing click listeners (may not work for all cases)
+                const newTableBody = dailyWeightTableBody.cloneNode(true);
+                dailyWeightTableBody.parentNode.replaceChild(newTableBody, dailyWeightTableBody);
+                
+                // Add our custom event listener
+                newTableBody.addEventListener('click', function(event) {
+                    const cell = event.target.closest('.editable-weight');
+                    if (cell) {
+                        window.eggWeightTracking.makeWeightCellEditableWithRemoval(event);
+                    }
+                });
             }
             
             // Also listen for egg details loaded event to apply interpolation styling
@@ -92,49 +158,130 @@ document.addEventListener('DOMContentLoaded', function() {
                     const egg = event.detail.eggData;
                     if (egg && egg.dailyWeights) {
                         applyInterpolationStyling(egg);
+                        
+                        // Set up the edit handlers for the new cells
+                        const tableBody = document.getElementById('dailyWeightTableBody');
+                        if (tableBody) {
+                            // Get all editable cells
+                            const cells = tableBody.querySelectorAll('.editable-weight');
+                            cells.forEach(cell => {
+                                // Remove existing event listeners
+                                const newCell = cell.cloneNode(true);
+                                cell.parentNode.replaceChild(newCell, cell);
+                                
+                                // Add our custom event listener
+                                newCell.addEventListener('click', function(event) {
+                                    window.eggWeightTracking.makeWeightCellEditableWithRemoval(event);
+                                });
+                            });
+                        }
                     }
                 }, 100);
             });
         }
     }, 300);
     
-    // Function to remove a weight from a specific day
-    async function removeWeight(day) {
+    // Custom function to finish weight editing with removal support
+    function finishWeightEditingWithRemoval(cell, input, displaySpan, isRemoval) {
+        const day = parseInt(cell.dataset.day);
+        
+        // If removing weight or input is empty
+        if (isRemoval || !input.value) {
+            // Mark this day for weight removal
+            weightsToRemove.add(day);
+            
+            // Update display to show it's marked for removal
+            displaySpan.textContent = 'To be removed';
+            displaySpan.style.display = '';
+            cell.classList.add('weight-to-remove');
+            
+            // Clean up the input and delete button
+            removeInputControls(cell);
+            
+            return true;
+        }
+        
+        // Otherwise, normal weight entry
+        const formattedValue = parseFloat(input.value).toFixed(2);
+        displaySpan.textContent = formattedValue;
+        displaySpan.style.display = '';
+        cell.classList.add('unsaved-changes');
+        
+        // Remove from weights to remove set if it was there
+        weightsToRemove.delete(day);
+        cell.classList.remove('weight-to-remove');
+        
+        // Clean up the input and delete button
+        removeInputControls(cell);
+        
+        return false;
+    }
+    
+    // Helper to remove input controls
+    function removeInputControls(cell) {
+        // Remove input
+        const input = cell.querySelector('input');
+        if (input && input.parentNode) {
+            input.parentNode.removeChild(input);
+        }
+        
+        // Remove delete button
+        const deleteBtn = cell.querySelector('.weight-delete-btn');
+        if (deleteBtn && deleteBtn.parentNode) {
+            deleteBtn.parentNode.removeChild(deleteBtn);
+        }
+    }
+    
+    // Process weight removals before saving
+    async function processWeightRemovals() {
+        if (weightsToRemove.size === 0) return;
+        
         // Get the current egg data
         if (!window.currentEggId || !window.eggs) return;
         
         const currentEgg = window.eggs.find(egg => egg.id === window.currentEggId);
         if (!currentEgg || !Array.isArray(currentEgg.dailyWeights)) return;
         
-        // Check if this day exists
-        if (day < 0 || day >= currentEgg.dailyWeights.length) return;
-        
         // Make a copy of the dailyWeights array
         const updatedWeights = JSON.parse(JSON.stringify(currentEgg.dailyWeights));
         
-        // Set weight to null for this day and remove interpolation flag
-        updatedWeights[day].weight = null;
-        updatedWeights[day].interpolated = false;
-        
-        // Update the database
-        try {
-            await window.eggsCollection.doc(currentEgg.id).update({
-                dailyWeights: updatedWeights
-            });
-            
-            // Update local data
-            currentEgg.dailyWeights = updatedWeights;
-            
-            // Update the global eggs array
-            const eggIndex = window.eggs.findIndex(e => e.id === currentEgg.id);
-            if (eggIndex !== -1) {
-                window.eggs[eggIndex].dailyWeights = updatedWeights;
+        // Process each day marked for removal
+        let anyChanges = false;
+        weightsToRemove.forEach(day => {
+            if (day >= 0 && day < updatedWeights.length) {
+                updatedWeights[day].weight = null;
+                updatedWeights[day].interpolated = false;
+                anyChanges = true;
             }
-            
-            // Run interpolation
-            await runInterpolation();
-        } catch (error) {
-            window.showToast('Error removing weight');
+        });
+        
+        // Update the database if changes were made
+        if (anyChanges) {
+            try {
+                await window.eggsCollection.doc(currentEgg.id).update({
+                    dailyWeights: updatedWeights
+                });
+                
+                // Update local data
+                currentEgg.dailyWeights = updatedWeights;
+                
+                // Update the global eggs array
+                const eggIndex = window.eggs.findIndex(e => e.id === currentEgg.id);
+                if (eggIndex !== -1) {
+                    window.eggs[eggIndex].dailyWeights = updatedWeights;
+                }
+                
+                // Clear the weights to remove
+                weightsToRemove.clear();
+                
+                // Update the UI
+                applyInterpolationStyling(currentEgg);
+                
+                // Show success message
+                window.showToast('Weights removed successfully');
+            } catch (error) {
+                window.showToast('Error removing weights');
+            }
         }
     }
     
@@ -273,6 +420,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const displaySpan = cell.querySelector('.weight-display');
             if (!displaySpan) return;
             
+            // Remove any "to be removed" styling
+            if (!weightsToRemove.has(dayData.day)) {
+                cell.classList.remove('weight-to-remove');
+            }
+            
             // Handle weight display
             if (dayData.weight !== null) {
                 // Update the text
@@ -304,56 +456,6 @@ document.addEventListener('DOMContentLoaded', function() {
     window.eggWeightInterpolation = {
         runInterpolation: runInterpolation,
         applyInterpolationStyling: applyInterpolationStyling,
-        removeWeight: removeWeight
+        processWeightRemovals: processWeightRemovals
     };
-    
-    // Add direct event listeners for weight removal
-    setTimeout(function() {
-        // This adds functionality for removing weights by pressing delete or backspace
-        document.addEventListener('keydown', function(e) {
-            if ((e.key === 'Delete' || e.key === 'Backspace') && 
-                document.activeElement.tagName === 'INPUT' && 
-                document.activeElement.closest('.editable-weight')) {
-                
-                // Mark as emptied if the user clears the field
-                const input = document.activeElement;
-                if (input.value === '') {
-                    input.dataset.emptied = 'true';
-                }
-            }
-        });
-        
-        // Handle enter key on empty inputs
-        document.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter' && 
-                document.activeElement.tagName === 'INPUT' && 
-                document.activeElement.closest('.editable-weight') &&
-                document.activeElement.value === '') {
-                
-                e.preventDefault();
-                
-                const input = document.activeElement;
-                const cell = input.closest('.editable-weight');
-                const displaySpan = cell.querySelector('.weight-display');
-                
-                if (displaySpan) {
-                    // Update the display
-                    displaySpan.textContent = 'Click to add';
-                    displaySpan.style.display = '';
-                    displaySpan.classList.remove(INTERPOLATED_WEIGHT_CLASS, 'weight-deviation-high', 'weight-deviation-low');
-                    
-                    // Remove the input
-                    if (input.parentNode) {
-                        input.parentNode.removeChild(input);
-                    }
-                    
-                    // Remove the weight from the database
-                    const day = parseInt(cell.dataset.day);
-                    if (!isNaN(day)) {
-                        window.eggWeightInterpolation.removeWeight(day);
-                    }
-                }
-            }
-        });
-    }, 1000);
 });
