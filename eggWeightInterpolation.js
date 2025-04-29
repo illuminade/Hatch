@@ -30,11 +30,93 @@ document.addEventListener('DOMContentLoaded', function() {
             };
         }
         
+        // Also override the finishWeightEditing function to handle weight removal
+        // Find the original function in the document
+        const originalScript = Array.from(document.scripts)
+            .find(script => script.textContent.includes('function finishWeightEditing'));
+        
+        if (originalScript) {
+            // The function might be in eggWeightTracking.js
+            // We'll add our own event listener to capture the completion of editing
+            document.addEventListener('weightEditingFinished', function(e) {
+                const { cell, isEmpty } = e.detail;
+                if (isEmpty) {
+                    // If a weight was removed, we need to update the cell style
+                    const displaySpan = cell.querySelector('.weight-display');
+                    if (displaySpan) {
+                        displaySpan.classList.remove(INTERPOLATED_WEIGHT_CLASS, 'weight-deviation-high', 'weight-deviation-low');
+                    }
+                }
+            });
+        }
+        
         // Add styles for interpolated weights
         addInterpolationStyles();
         
         // Override the render function
         overrideRenderFunction();
+        
+        // Monkey patch the existing makeWeightCellEditable function to handle weight removal
+        patchWeightCellEditable();
+    }
+    
+    // Patch the weight cell editable function to support weight removal
+    function patchWeightCellEditable() {
+        if (window.eggWeightTracking) {
+            // Get all functions from the document
+            const allFunctions = {};
+            Array.from(document.scripts).forEach(script => {
+                // Extract all function declarations from script content
+                const functionMatches = script.textContent.match(/function\s+(\w+)\s*\(/g);
+                if (functionMatches) {
+                    functionMatches.forEach(match => {
+                        const funcName = match.replace('function', '').replace('(', '').trim();
+                        allFunctions[funcName] = true;
+                    });
+                }
+            });
+            
+            // If the finishWeightEditing function exists, we'll try to enhance it
+            if (allFunctions.finishWeightEditing) {
+                // We'll add a custom version of finishWeightEditing 
+                window.customFinishWeightEditing = function(cell, input, displaySpan) {
+                    let isEmpty = false;
+                    
+                    // Check if the input has a value
+                    if (input.value) {
+                        // Format value to 2 decimal places
+                        const formattedValue = parseFloat(input.value).toFixed(2);
+                        displaySpan.textContent = formattedValue;
+                        
+                        // Mark cell as having unsaved changes
+                        cell.classList.add('unsaved-changes');
+                    } else {
+                        // If no value, restore original text and mark as empty
+                        displaySpan.textContent = 'Click to add';
+                        isEmpty = true;
+                        
+                        // Mark this cell to have weight removed during save
+                        cell.dataset.removeWeight = "true";
+                    }
+                    
+                    // Show display span and remove input
+                    displaySpan.style.display = '';
+                    
+                    // Sometimes the input might already be removed, so check first
+                    if (input.parentNode === cell) {
+                        cell.removeChild(input);
+                    }
+                    
+                    // Dispatch a custom event that we can listen for
+                    const event = new CustomEvent('weightEditingFinished', { 
+                        detail: { cell, isEmpty } 
+                    });
+                    document.dispatchEvent(event);
+                    
+                    return isEmpty;
+                };
+            }
+        }
     }
     
     // Add CSS styles for interpolated weights
@@ -79,7 +161,23 @@ document.addEventListener('DOMContentLoaded', function() {
         // Create a copy of the dailyWeights array to avoid reference issues
         const updatedWeights = JSON.parse(JSON.stringify(currentEgg.dailyWeights));
         
-        // Find days with known weights (user-entered) - exclude interpolated weights
+        // Handle any weight removals first
+        const tableBody = document.getElementById('dailyWeightTableBody');
+        if (tableBody) {
+            const cellsToRemoveWeight = tableBody.querySelectorAll('.editable-weight[data-remove-weight="true"]');
+            cellsToRemoveWeight.forEach(cell => {
+                const day = parseInt(cell.dataset.day);
+                // Find this day in the updatedWeights array and set weight to null
+                if (day >= 0 && day < updatedWeights.length) {
+                    updatedWeights[day].weight = null;
+                    updatedWeights[day].interpolated = false;
+                }
+                // Clear the removal flag
+                cell.removeAttribute('data-remove-weight');
+            });
+        }
+        
+        // Find days with known weights (user-entered) - exclude interpolated weights and null weights
         const knownWeightDays = updatedWeights
             .filter(day => day.weight !== null && !day.interpolated)
             .map(day => ({
@@ -89,6 +187,28 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Make sure we have at least one known weight
         if (knownWeightDays.length === 0) {
+            // Update the database to save any weight removals
+            try {
+                await window.eggsCollection.doc(currentEgg.id).update({
+                    dailyWeights: updatedWeights
+                });
+                
+                // Update the current egg data
+                currentEgg.dailyWeights = updatedWeights;
+                
+                // Update the global eggs array
+                const eggIndex = window.eggs.findIndex(e => e.id === currentEgg.id);
+                if (eggIndex !== -1) {
+                    window.eggs[eggIndex].dailyWeights = updatedWeights;
+                }
+                
+                // Re-render the weight table with updated data
+                if (window.eggWeightTracking && window.eggWeightTracking.renderDailyWeightsTable) {
+                    window.eggWeightTracking.renderDailyWeightsTable(currentEgg);
+                }
+            } catch (error) {
+                window.showToast('Error updating weights: ' + (error.message || 'Unknown error'));
+            }
             return;
         }
         
@@ -260,6 +380,57 @@ document.addEventListener('DOMContentLoaded', function() {
         setTimeout(() => renderInterpolatedWeights(egg), 100);
     }
     
+    // Add event listener to handle entering empty values
+    function addEmptyValueHandler() {
+        document.addEventListener('click', function(e) {
+            // Only handle clicks on weight cells
+            if (!e.target.closest('.editable-weight')) {
+                return;
+            }
+            
+            // Find the cell
+            const cell = e.target.closest('.editable-weight');
+            
+            // Add a keyup event handler to the input
+            const handleInputCreation = function() {
+                const input = cell.querySelector('input');
+                if (input) {
+                    // Handle the backspace and delete keys
+                    input.addEventListener('keyup', function(e) {
+                        if (input.value === '' && (e.key === 'Delete' || e.key === 'Backspace')) {
+                            // Mark this input as empty for processing
+                            input.dataset.empty = "true";
+                        }
+                    });
+                    
+                    // Handle the Enter key to process the empty value
+                    input.addEventListener('keypress', function(e) {
+                        if (e.key === 'Enter' && input.value === '') {
+                            e.preventDefault();
+                            const displaySpan = cell.querySelector('.weight-display');
+                            if (displaySpan) {
+                                // Use our custom function if available, otherwise just update the text
+                                if (window.customFinishWeightEditing) {
+                                    window.customFinishWeightEditing(cell, input, displaySpan);
+                                } else {
+                                    displaySpan.textContent = 'Click to add';
+                                    displaySpan.style.display = '';
+                                    cell.removeChild(input);
+                                }
+                            }
+                        }
+                    });
+                    
+                    // Clean up this handler as it's no longer needed
+                    document.removeEventListener('DOMNodeInserted', handleInputCreation);
+                }
+            };
+            
+            // Watch for the input element to be added
+            document.addEventListener('DOMNodeInserted', handleInputCreation);
+        });
+    }
+    
     // Listen for egg details loaded event
     document.addEventListener('eggDetailsLoaded', handleEggDetailsLoaded);
     
@@ -270,5 +441,8 @@ document.addEventListener('DOMContentLoaded', function() {
     };
     
     // Start initialization
-    setTimeout(initializeWeightInterpolation, 300);
+    setTimeout(function() {
+        initializeWeightInterpolation();
+        addEmptyValueHandler();
+    }, 300);
 });
