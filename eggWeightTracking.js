@@ -171,23 +171,24 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Update a specific day's weight
-    function updateEggWeight(eggId, day, weight) {
-            // Find the egg
-            const egg = window.eggs.find(e => e.id === eggId);
-            if (!egg || !egg.dailyWeights) return;
-            
-            // Update the local dailyWeights array
-            egg.dailyWeights[day].weight = weight;
-            
-            // Update the entire dailyWeights array in the database
-            window.eggsCollection.doc(eggId).update({
-                dailyWeights: egg.dailyWeights
-            }).then(() => {
-                window.showToast('Weight updated successfully');
-            }).catch(error => {
-                window.showToast('Error updating weight');
-            });
-        }
+    // Update a specific day's weight
+function updateEggWeight(eggId, day, weight) {
+    // Find the egg
+    const egg = window.eggs.find(e => e.id === eggId);
+    if (!egg || !egg.dailyWeights) return;
+    
+    // Update the local dailyWeights array
+    egg.dailyWeights[day].weight = weight;
+    
+    // Update the entire dailyWeights array in the database
+    window.eggsCollection.doc(eggId).update({
+        dailyWeights: egg.dailyWeights
+    }).then(() => {
+        window.showToast('Weight updated successfully');
+    }).catch(error => {
+        window.showToast('Error updating weight');
+    });
+}
         
     
     // Make functions available globally
