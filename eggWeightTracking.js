@@ -20,6 +20,26 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Listen for custom events
         document.addEventListener('eggDetailsLoaded', handleEggDetailsLoaded);
+        
+        // Add a global click handler to handle clicks outside of editable cells
+        document.addEventListener('click', handleGlobalClick);
+    }
+    
+    // Handle clicks outside of the editable cells
+    function handleGlobalClick(event) {
+        // If we clicked on or inside an editable cell or input, do nothing
+        if (event.target.closest('.editable-weight') || 
+            event.target.classList.contains('weight-input')) {
+            return;
+        }
+        
+        // Find any active input and close it
+        const activeInput = document.querySelector('.editable-weight input');
+        if (activeInput) {
+            const cell = activeInput.closest('.editable-weight');
+            const displaySpan = cell.querySelector('.weight-display');
+            finishWeightEditing(cell, activeInput, displaySpan);
+        }
     }
     
     // Create and add the update weights button
@@ -180,6 +200,17 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
+        // Stop event propagation to prevent the global click handler from firing
+        e.stopPropagation();
+        
+        // Close any other active editor before opening a new one
+        const activeInput = document.querySelector('.editable-weight input');
+        if (activeInput && activeInput.parentElement !== e.currentTarget) {
+            const activeCell = activeInput.closest('.editable-weight');
+            const activeDisplaySpan = activeCell.querySelector('.weight-display');
+            finishWeightEditing(activeCell, activeInput, activeDisplaySpan);
+        }
+        
         const day = parseInt(e.currentTarget.dataset.day);
         const displaySpan = e.currentTarget.querySelector('.weight-display');
         const currentValue = displaySpan.textContent;
@@ -203,8 +234,13 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Add event listeners for input
         input.addEventListener('blur', function() {
-            // When input loses focus, restore display but with updated value if entered
-            finishWeightEditing(e.currentTarget, input, displaySpan);
+            // Use a short timeout to allow click events to be processed first
+            setTimeout(() => {
+                // Check if the input is still in the DOM before trying to finish editing
+                if (input.parentElement) {
+                    finishWeightEditing(e.currentTarget, input, displaySpan);
+                }
+            }, 100);
         });
         
         input.addEventListener('keypress', function(e) {
@@ -214,10 +250,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 finishWeightEditing(e.currentTarget, input, displaySpan);
             }
         });
+        
+        // Prevent input clicks from bubbling up and triggering cell click again
+        input.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
     }
     
     // Finish weight editing, update display
     function finishWeightEditing(cell, input, displaySpan) {
+        // Make sure input is still in the DOM
+        if (!input.parentElement) return;
+        
         if (input.value) {
             // Format value to 2 decimal places
             const formattedValue = parseFloat(input.value).toFixed(2);
@@ -227,12 +271,18 @@ document.addEventListener('DOMContentLoaded', function() {
             cell.classList.add('unsaved-changes');
         } else {
             // If no value, restore original text
-            displaySpan.textContent = 'Click to add';
+            if (displaySpan.textContent === 'Click to add') {
+                displaySpan.textContent = 'Click to add';
+            }
         }
         
         // Show display span and remove input
         displaySpan.style.display = '';
-        cell.removeChild(input);
+        
+        // Sometimes the input might already be removed, so check first
+        if (input.parentNode === cell) {
+            cell.removeChild(input);
+        }
     }
     
     // Save all weights
@@ -248,6 +298,14 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!Array.isArray(currentEggData.dailyWeights)) {
             window.showToast('Error: Weight data not available');
             return;
+        }
+        
+        // First, ensure any active editors are closed
+        const activeInput = document.querySelector('.editable-weight input');
+        if (activeInput) {
+            const activeCell = activeInput.closest('.editable-weight');
+            const activeDisplaySpan = activeCell.querySelector('.weight-display');
+            finishWeightEditing(activeCell, activeInput, activeDisplaySpan);
         }
         
         // Create a copy of the dailyWeights array to avoid reference issues
@@ -290,6 +348,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (eggIndex !== -1) {
                     window.eggs[eggIndex].dailyWeights = updatedDailyWeights;
                 }
+                
+                // Remove the unsaved-changes class from all cells
+                const unsavedCells = dailyWeightTableBody.querySelectorAll('.unsaved-changes');
+                unsavedCells.forEach(cell => {
+                    cell.classList.remove('unsaved-changes');
+                });
                 
                 // Re-render the weight table with updated data
                 renderDailyWeightsTable(currentEggData);
