@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let dailyWeightTableBody = null;
     let updateWeightsBtn = null;
     let currentEggData = null;
+    let isEditingCell = false; // Flag to track if we're currently editing a cell
     
     // Constants
     const DATE_FORMAT_OPTIONS = { year: 'numeric', month: 'short', day: 'numeric' };
@@ -148,6 +149,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // Clear the table body
         dailyWeightTableBody.innerHTML = '';
         
+        // Reset editing flag when re-rendering
+        isEditingCell = false;
+        
         // Add rows for each day
         egg.dailyWeights.forEach((dayData, index) => {
             const row = document.createElement('tr');
@@ -195,7 +199,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Make a weight cell editable on click
     function makeWeightCellEditable(e) {
-        // Don't do anything if we're already editing
+        // Don't do anything if we're already editing this cell
         if (e.currentTarget.querySelector('input')) {
             return;
         }
@@ -203,13 +207,19 @@ document.addEventListener('DOMContentLoaded', function() {
         // Stop event propagation to prevent the global click handler from firing
         e.stopPropagation();
         
-        // Close any other active editor before opening a new one
-        const activeInput = document.querySelector('.editable-weight input');
-        if (activeInput && activeInput.parentElement !== e.currentTarget) {
-            const activeCell = activeInput.closest('.editable-weight');
-            const activeDisplaySpan = activeCell.querySelector('.weight-display');
-            finishWeightEditing(activeCell, activeInput, activeDisplaySpan);
+        // If we're already editing a cell, don't allow editing another one
+        if (isEditingCell) {
+            // Close any other active editor before opening a new one
+            const activeInput = document.querySelector('.editable-weight input');
+            if (activeInput) {
+                const activeCell = activeInput.closest('.editable-weight');
+                const activeDisplaySpan = activeCell.querySelector('.weight-display');
+                finishWeightEditing(activeCell, activeInput, activeDisplaySpan);
+            }
         }
+        
+        // Set editing flag
+        isEditingCell = true;
         
         const day = parseInt(e.currentTarget.dataset.day);
         const displaySpan = e.currentTarget.querySelector('.weight-display');
@@ -259,6 +269,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Finish weight editing, update display
     function finishWeightEditing(cell, input, displaySpan) {
+        // Reset editing flag
+        isEditingCell = false;
+        
         // Make sure input is still in the DOM
         if (!input.parentElement) return;
         
@@ -354,6 +367,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 unsavedCells.forEach(cell => {
                     cell.classList.remove('unsaved-changes');
                 });
+                
+                // Reset editing flag
+                isEditingCell = false;
                 
                 // Re-render the weight table with updated data
                 renderDailyWeightsTable(currentEggData);
