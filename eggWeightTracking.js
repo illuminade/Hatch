@@ -189,28 +189,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
         
-        // Update the local dailyWeights array
-        egg.dailyWeights[day].weight = weight;
-        console.log(`Local dailyWeights updated for day ${day}`);
-        
-        // Create the update path
-        const updatePath = `dailyWeights.${day}.weight`;
-        console.log(`Firebase update path: ${updatePath}`);
-        
-        // Update the database
-        window.eggsCollection.doc(eggId).update({
-            [updatePath]: weight
-        }).then(() => {
-            console.log(`Successfully updated weight for day ${day} to ${weight}g in Firebase`);
-            window.showToast('Weight updated successfully');
-            
-            // Refresh the table to update any visual indicators
-            renderDailyWeightsTable(egg);
-        }).catch(error => {
-            console.error("Error updating weight:", error.code, error.message);
-            window.showToast('Error updating weight: ' + error.message);
-        });
-    }
     
     // Make functions available globally
     window.eggWeightTracking = {
