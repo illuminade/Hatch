@@ -1,10 +1,10 @@
 // eggWeightTracking.js - Handles egg weight tracking and calculations
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("Egg Weight Tracking module initializing...");
-    
     // DOM Elements
     let dailyWeightTable = null;
     let dailyWeightTableBody = null;
+    let updateWeightsBtn = null;
+    let currentEggData = null;
     
     // Constants
     const DATE_FORMAT_OPTIONS = { year: 'numeric', month: 'short', day: 'numeric' };
@@ -15,8 +15,35 @@ document.addEventListener('DOMContentLoaded', function() {
         dailyWeightTable = document.getElementById('dailyWeightTable');
         dailyWeightTableBody = document.getElementById('dailyWeightTableBody');
         
+        // Create and add the update weights button
+        createUpdateWeightsButton();
+        
         // Listen for custom events
         document.addEventListener('eggDetailsLoaded', handleEggDetailsLoaded);
+    }
+    
+    // Create and add the update weights button
+    function createUpdateWeightsButton() {
+        // Create button container
+        const buttonContainer = document.createElement('div');
+        buttonContainer.className = 'update-weights-container';
+        buttonContainer.style.textAlign = 'center';
+        buttonContainer.style.marginTop = '15px';
+        
+        // Create the button
+        updateWeightsBtn = document.createElement('button');
+        updateWeightsBtn.id = 'updateWeightsBtn';
+        updateWeightsBtn.className = 'btn btn-primary';
+        updateWeightsBtn.innerHTML = '<i class="fas fa-save"></i> Update All Weights';
+        updateWeightsBtn.addEventListener('click', saveAllWeights);
+        
+        // Add button to container
+        buttonContainer.appendChild(updateWeightsBtn);
+        
+        // Add container after the weight table
+        if (dailyWeightTable && dailyWeightTable.parentNode) {
+            dailyWeightTable.parentNode.insertBefore(buttonContainer, dailyWeightTable.nextSibling);
+        }
     }
     
     // Handle when egg details are loaded
@@ -26,8 +53,11 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (!egg) return;
         
-        // Initialize daily weights if they don't exist
-        if (!egg.dailyWeights) {
+        // Store current egg data for later use
+        currentEggData = egg;
+        
+        // Initialize daily weights if they don't exist or are empty
+        if (!egg.dailyWeights || egg.dailyWeights.length === 0) {
             initializeDailyWeights(eggId, egg);
         } else {
             // Render the daily weights table
@@ -37,8 +67,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize daily weights for a new or existing egg
     function initializeDailyWeights(eggId, egg) {
-        console.log("Initializing daily weights for egg:", eggId);
-        
         const initialWeight = parseFloat(egg.weight);
         const incubationDays = parseInt(egg.incubationDays);
         const startDate = new Date(egg.incubationStart);
@@ -49,7 +77,6 @@ document.addEventListener('DOMContentLoaded', function() {
             midHumidityLoss = parseFloat(egg.midHumidityLoss.replace('%', ''));
         } else {
             midHumidityLoss = 12; // Default value if not set
-            console.warn("Mid humidity loss not set, using default of 12%");
         }
         
         // Calculate daily weight loss
@@ -77,19 +104,21 @@ document.addEventListener('DOMContentLoaded', function() {
         window.eggsCollection.doc(eggId).update({
             dailyWeights: dailyWeights
         }).then(() => {
-            console.log("Daily weights initialized successfully");
             // Update the local egg object and render the table
-            egg.dailyWeights = dailyWeights;
-            renderDailyWeightsTable(egg);
+            const eggIndex = window.eggs.findIndex(e => e.id === eggId);
+            if (eggIndex !== -1) {
+                window.eggs[eggIndex].dailyWeights = dailyWeights;
+                currentEggData = window.eggs[eggIndex];
+                renderDailyWeightsTable(window.eggs[eggIndex]);
+            }
         }).catch(error => {
-            console.error("Error initializing daily weights:", error);
             window.showToast('Error initializing weight tracking');
         });
     }
     
     // Render the daily weights table
     function renderDailyWeightsTable(egg) {
-        if (!dailyWeightTableBody) return;
+        if (!dailyWeightTableBody || !Array.isArray(egg.dailyWeights)) return;
         
         // Clear the table body
         dailyWeightTableBody.innerHTML = '';
@@ -113,20 +142,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
             
-            // Create the row content with a save button
+            // Create the row content
             row.innerHTML = `
                 <td>${dayData.day}</td>
                 <td>${formattedDate}</td>
                 <td>
-                    <div class="weight-input-group">
-                        <input type="number" class="weight-input ${weightClassname}" 
-                               id="weight-day-${dayData.day}"
-                               value="${dayData.weight !== null ? dayData.weight : ''}" 
-                               placeholder="Enter weight" step="0.01" min="0">
-                        <button type="button" class="save-weight-btn" data-day="${dayData.day}">
-                            <i class="fas fa-save"></i> Save
-                        </button>
-                    </div>
+                    <input type="number" class="weight-input ${weightClassname}" 
+                           id="weight-day-${dayData.day}"
+                           value="${dayData.weight !== null ? dayData.weight : ''}" 
+                           placeholder="Enter weight" step="0.01" min="0">
                 </td>
                 <td>${dayData.targetWeight.toFixed(2)} g</td>
             `;
@@ -135,31 +159,12 @@ document.addEventListener('DOMContentLoaded', function() {
             dailyWeightTableBody.appendChild(row);
         });
         
-        // Add event listeners to the save buttons
-        const saveButtons = dailyWeightTableBody.querySelectorAll('.save-weight-btn');
-        saveButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                const day = parseInt(this.dataset.day);
-                const input = document.getElementById(`weight-day-${day}`);
-                
-                if (input && input.value) {
-                    const weight = parseFloat(input.value);
-                    console.log(`Saving weight for day ${day}: ${weight}g`);
-                    updateEggWeight(egg.id, day, weight);
-                } else {
-                    window.showToast('Please enter a weight value');
-                }
-            });
-        });
-        
         // Make rows clickable to focus on the input
         const rows = dailyWeightTableBody.querySelectorAll('.weight-row');
         rows.forEach(row => {
             row.addEventListener('click', function(e) {
-                // Don't trigger if clicking on the input or button
-                if (e.target.tagName !== 'INPUT' && 
-                    e.target.tagName !== 'BUTTON' && 
-                    e.target.tagName !== 'I') {
+                // Don't trigger if clicking on the input
+                if (e.target.tagName !== 'INPUT') {
                     const day = parseInt(this.dataset.day);
                     const input = document.getElementById(`weight-day-${day}`);
                     if (input) {
@@ -168,34 +173,75 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
         });
+        
+        // Make sure the update button is visible
+        if (updateWeightsBtn) {
+            updateWeightsBtn.style.display = 'inline-flex';
+        }
     }
     
-    // Update a specific day's weight
-    // Update a specific day's weight
-function updateEggWeight(eggId, day, weight) {
-    // Find the egg
-    const egg = window.eggs.find(e => e.id === eggId);
-    if (!egg || !egg.dailyWeights) return;
-    
-    // Update the local dailyWeights array
-    egg.dailyWeights[day].weight = weight;
-    
-    // Update the entire dailyWeights array in the database
-    window.eggsCollection.doc(eggId).update({
-        dailyWeights: egg.dailyWeights
-    }).then(() => {
-        window.showToast('Weight updated successfully');
-    }).catch(error => {
-        window.showToast('Error updating weight');
-    });
-}
+    // Save all weights
+    function saveAllWeights() {
+        if (!currentEggData || !currentEggData.id) {
+            window.showToast('No egg data available');
+            return;
+        }
         
+        const eggId = currentEggData.id;
+        
+        // Find the egg in the global eggs array
+        const egg = window.eggs.find(e => e.id === eggId);
+        if (!egg || !Array.isArray(egg.dailyWeights)) {
+            window.showToast('Error: Egg data not found');
+            return;
+        }
+        
+        // Create a copy of the dailyWeights array to avoid reference issues
+        const updatedDailyWeights = [...egg.dailyWeights];
+        let hasChanges = false;
+        
+        // Go through each day and check for updates
+        for (let i = 0; i < updatedDailyWeights.length; i++) {
+            const input = document.getElementById(`weight-day-${i}`);
+            if (input && input.value) {
+                const newWeight = parseFloat(input.value);
+                const formattedWeight = parseFloat(newWeight.toFixed(2));
+                
+                // Check if the weight has changed
+                if (updatedDailyWeights[i].weight !== formattedWeight) {
+                    updatedDailyWeights[i].weight = formattedWeight;
+                    hasChanges = true;
+                }
+            }
+        }
+        
+        // Only update if there are changes
+        if (hasChanges) {
+            // Update the database
+            window.eggsCollection.doc(eggId).update({
+                dailyWeights: updatedDailyWeights
+            }).then(() => {
+                window.showToast('Weights updated successfully');
+                
+                // Update the local copy of the egg data
+                egg.dailyWeights = updatedDailyWeights;
+                currentEggData = egg;
+                
+                // Re-render the weight table with updated data
+                renderDailyWeightsTable(egg);
+            }).catch(error => {
+                window.showToast('Error updating weights');
+            });
+        } else {
+            window.showToast('No changes to update');
+        }
+    }
     
     // Make functions available globally
     window.eggWeightTracking = {
         initializeDailyWeights,
         renderDailyWeightsTable,
-        updateEggWeight
+        saveAllWeights
     };
     
     // Initialize the module
