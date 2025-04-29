@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let dailyWeightTableBody = null;
     let updateWeightsBtn = null;
     let currentEggData = null;
-    let isEditingCell = false; // Flag to track if we're currently editing a cell
+    let activeEditCell = null; // Track which cell is currently being edited
     
     // Constants
     const DATE_FORMAT_OPTIONS = { year: 'numeric', month: 'short', day: 'numeric' };
@@ -28,18 +28,21 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Handle clicks outside of the editable cells
     function handleGlobalClick(event) {
-        // If we clicked on or inside an editable cell or input, do nothing
-        if (event.target.closest('.editable-weight') || 
+        // If no cell is being edited, do nothing
+        if (!activeEditCell) return;
+        
+        // If we clicked on or inside the active edit cell, do nothing
+        if (event.target.closest('.editable-weight') === activeEditCell || 
             event.target.classList.contains('weight-input')) {
             return;
         }
         
-        // Find any active input and close it
-        const activeInput = document.querySelector('.editable-weight input');
+        // Find the active input and close it
+        const activeInput = activeEditCell.querySelector('input');
         if (activeInput) {
-            const cell = activeInput.closest('.editable-weight');
-            const displaySpan = cell.querySelector('.weight-display');
-            finishWeightEditing(cell, activeInput, displaySpan);
+            const displaySpan = activeEditCell.querySelector('.weight-display');
+            finishWeightEditing(activeEditCell, activeInput, displaySpan);
+            activeEditCell = null; // Reset active edit cell
         }
     }
     
@@ -81,6 +84,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Store current egg data for later use
         currentEggData = egg;
+        
+        // Reset active edit cell when loading new egg details
+        activeEditCell = null;
         
         // Initialize daily weights if they don't exist or are empty
         if (!egg.dailyWeights || egg.dailyWeights.length === 0) {
@@ -149,8 +155,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // Clear the table body
         dailyWeightTableBody.innerHTML = '';
         
-        // Reset editing flag when re-rendering
-        isEditingCell = false;
+        // Reset active edit cell when re-rendering
+        activeEditCell = null;
         
         // Add rows for each day
         egg.dailyWeights.forEach((dayData, index) => {
@@ -188,7 +194,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // Add click event to editable weight cells
         const editableCells = dailyWeightTableBody.querySelectorAll('.editable-weight');
         editableCells.forEach(cell => {
-            cell.addEventListener('click', makeWeightCellEditable);
+            // Using mousedown instead of click for better control
+            cell.addEventListener('mousedown', handleCellMouseDown);
         });
         
         // Make sure the update button is visible
@@ -197,7 +204,33 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Make a weight cell editable on click
+    // Handle mousedown on cell to better control the click behavior
+    function handleCellMouseDown(e) {
+        // If we're clicking on the same cell that's already active, do nothing
+        if (activeEditCell === e.currentTarget) {
+            // If we're clicking on the input, don't stop propagation
+            if (e.target.tagName === 'INPUT') {
+                return;
+            }
+            // Otherwise, prevent default to avoid re-triggering edit mode
+            e.preventDefault();
+            return;
+        }
+        
+        // If a different cell is being edited, finish that edit first
+        if (activeEditCell) {
+            const activeInput = activeEditCell.querySelector('input');
+            if (activeInput) {
+                const displaySpan = activeEditCell.querySelector('.weight-display');
+                finishWeightEditing(activeEditCell, activeInput, displaySpan);
+            }
+        }
+        
+        // Now handle the new cell edit
+        makeWeightCellEditable(e);
+    }
+    
+    // Make a weight cell editable
     function makeWeightCellEditable(e) {
         // Don't do anything if we're already editing this cell
         if (e.currentTarget.querySelector('input')) {
@@ -207,19 +240,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // Stop event propagation to prevent the global click handler from firing
         e.stopPropagation();
         
-        // If we're already editing a cell, don't allow editing another one
-        if (isEditingCell) {
-            // Close any other active editor before opening a new one
-            const activeInput = document.querySelector('.editable-weight input');
-            if (activeInput) {
-                const activeCell = activeInput.closest('.editable-weight');
-                const activeDisplaySpan = activeCell.querySelector('.weight-display');
-                finishWeightEditing(activeCell, activeInput, activeDisplaySpan);
-            }
-        }
-        
-        // Set editing flag
-        isEditingCell = true;
+        // Set this cell as the active edit cell
+        activeEditCell = e.currentTarget;
         
         const day = parseInt(e.currentTarget.dataset.day);
         const displaySpan = e.currentTarget.querySelector('.weight-display');
@@ -243,25 +265,20 @@ document.addEventListener('DOMContentLoaded', function() {
         input.focus();
         
         // Add event listeners for input
-        input.addEventListener('blur', function() {
-            // Use a short timeout to allow click events to be processed first
-            setTimeout(() => {
-                // Check if the input is still in the DOM before trying to finish editing
-                if (input.parentElement) {
-                    finishWeightEditing(e.currentTarget, input, displaySpan);
-                }
-            }, 100);
-        });
-        
         input.addEventListener('keypress', function(e) {
             // Submit on Enter key
             if (e.key === 'Enter') {
                 e.preventDefault();
-                finishWeightEditing(e.currentTarget, input, displaySpan);
+                finishWeightEditing(activeEditCell, input, displaySpan);
+                activeEditCell = null; // Reset active edit cell
             }
         });
         
-        // Prevent input clicks from bubbling up and triggering cell click again
+        // Prevent input events from bubbling up
+        input.addEventListener('mousedown', function(e) {
+            e.stopPropagation();
+        });
+        
         input.addEventListener('click', function(e) {
             e.stopPropagation();
         });
@@ -269,9 +286,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Finish weight editing, update display
     function finishWeightEditing(cell, input, displaySpan) {
-        // Reset editing flag
-        isEditingCell = false;
-        
         // Make sure input is still in the DOM
         if (!input.parentElement) return;
         
@@ -284,9 +298,7 @@ document.addEventListener('DOMContentLoaded', function() {
             cell.classList.add('unsaved-changes');
         } else {
             // If no value, restore original text
-            if (displaySpan.textContent === 'Click to add') {
-                displaySpan.textContent = 'Click to add';
-            }
+            displaySpan.textContent = 'Click to add';
         }
         
         // Show display span and remove input
@@ -314,11 +326,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         // First, ensure any active editors are closed
-        const activeInput = document.querySelector('.editable-weight input');
-        if (activeInput) {
-            const activeCell = activeInput.closest('.editable-weight');
-            const activeDisplaySpan = activeCell.querySelector('.weight-display');
-            finishWeightEditing(activeCell, activeInput, activeDisplaySpan);
+        if (activeEditCell) {
+            const activeInput = activeEditCell.querySelector('input');
+            if (activeInput) {
+                const activeDisplaySpan = activeEditCell.querySelector('.weight-display');
+                finishWeightEditing(activeEditCell, activeInput, activeDisplaySpan);
+                activeEditCell = null;
+            }
         }
         
         // Create a copy of the dailyWeights array to avoid reference issues
@@ -368,8 +382,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     cell.classList.remove('unsaved-changes');
                 });
                 
-                // Reset editing flag
-                isEditingCell = false;
+                // Reset active edit cell
+                activeEditCell = null;
                 
                 // Re-render the weight table with updated data
                 renderDailyWeightsTable(currentEggData);
