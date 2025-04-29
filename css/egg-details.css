@@ -1,0 +1,142 @@
+/* egg-details.css - Styles for the egg details view */
+
+/* Egg Details Page */
+.egg-detail-view {
+    padding: 0 0 20px;
+}
+
+.detail-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.detail-icon {
+    width: 60px;
+    height: 60px;
+    background: var(--primary-color);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-size: 1.8rem;
+}
+
+.detail-title h2 {
+    font-size: 1.5rem;
+    margin-bottom: 5px;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.detail-title p {
+    color: var(--text-secondary);
+}
+
+.detail-card {
+    background: var(--card-bg);
+    border-radius: var(--border-radius);
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: var(--box-shadow);
+    border: 1px solid var(--border-color);
+}
+
+.detail-info-card {
+    background: var(--card-bg);
+    border-radius: var(--border-radius);
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: var(--box-shadow);
+    border: 1px solid var(--border-color);
+}
+
+.detail-info-card h3 {
+    font-size: 1.1rem;
+    margin-bottom: 15px;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.detail-progress-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.detail-progress-circle {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.progress-percentage {
+    position: absolute;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.progress-status {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.days-remaining {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.hatch-date {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.detail-row {
+    display: flex;
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.detail-row:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.detail-label {
+    flex: 1;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+}
+
+.detail-value {
+    flex: 1.5;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.detail-notes {
+    color: var(--text-primary);
+    line-height: 1.5;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 15px;
+    margin-top: 10px;
+}
+
+.action-buttons .btn {
+    flex: 1;
+}
