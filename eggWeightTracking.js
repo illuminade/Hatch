@@ -42,7 +42,15 @@ document.addEventListener('DOMContentLoaded', function() {
         const initialWeight = parseFloat(egg.weight);
         const incubationDays = parseInt(egg.incubationDays);
         const startDate = new Date(egg.incubationStart);
-        const midHumidityLoss = parseFloat(egg.midHumidityLoss.replace('%', ''));
+        
+        // Extract midHumidityLoss, removing '%' if present
+        let midHumidityLoss;
+        if (egg.midHumidityLoss) {
+            midHumidityLoss = parseFloat(egg.midHumidityLoss.replace('%', ''));
+        } else {
+            midHumidityLoss = 12; // Default value if not set
+            console.warn("Mid humidity loss not set, using default of 12%");
+        }
         
         // Calculate daily weight loss
         const totalWeightLoss = initialWeight * (midHumidityLoss / 100);
@@ -94,12 +102,21 @@ document.addEventListener('DOMContentLoaded', function() {
             const dateObj = new Date(dayData.date);
             const formattedDate = dateObj.toLocaleDateString(undefined, DATE_FORMAT_OPTIONS);
             
+            // Calculate if there's a deviation between actual and target weight
+            let weightClassname = '';
+            if (dayData.weight !== null) {
+                const deviation = dayData.weight - dayData.targetWeight;
+                if (Math.abs(deviation) > (dayData.targetWeight * 0.05)) { // More than 5% deviation
+                    weightClassname = deviation > 0 ? 'weight-deviation-high' : 'weight-deviation-low';
+                }
+            }
+            
             // Create the row content
             row.innerHTML = `
                 <td>${dayData.day}</td>
                 <td>${formattedDate}</td>
                 <td>
-                    <input type="number" class="weight-input" data-day="${dayData.day}" 
+                    <input type="number" class="weight-input ${weightClassname}" data-day="${dayData.day}" 
                            value="${dayData.weight !== null ? dayData.weight : ''}" 
                            placeholder="Enter weight" step="0.01" min="0">
                 </td>
@@ -113,30 +130,71 @@ document.addEventListener('DOMContentLoaded', function() {
         // Add event listeners to the weight inputs
         const weightInputs = dailyWeightTableBody.querySelectorAll('.weight-input');
         weightInputs.forEach(input => {
+            // Log to verify inputs are found
+            console.log(`Adding event listeners to input for day ${input.dataset.day}`);
+
+            // Add both blur and change events to catch all user interactions
+            input.addEventListener('blur', function() {
+                console.log(`Blur event triggered for day ${this.dataset.day} with value ${this.value}`);
+                if (this.value) {
+                    updateEggWeight(egg.id, parseInt(this.dataset.day), parseFloat(this.value));
+                }
+            });
+            
             input.addEventListener('change', function() {
-                updateEggWeight(egg.id, parseInt(this.dataset.day), parseFloat(this.value));
+                console.log(`Change event triggered for day ${this.dataset.day} with value ${this.value}`);
+                if (this.value) {
+                    updateEggWeight(egg.id, parseInt(this.dataset.day), parseFloat(this.value));
+                }
+            });
+
+            // Also catch the enter key being pressed
+            input.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    console.log(`Enter key pressed for day ${this.dataset.day} with value ${this.value}`);
+                    e.preventDefault();
+                    if (this.value) {
+                        updateEggWeight(egg.id, parseInt(this.dataset.day), parseFloat(this.value));
+                        // Remove focus from input
+                        this.blur();
+                    }
+                }
             });
         });
     }
     
     // Update a specific day's weight
     function updateEggWeight(eggId, day, weight) {
+        // Log input parameters
+        console.log(`updateEggWeight called with: eggId=${eggId}, day=${day}, weight=${weight}`);
+        
         // Find the egg
         const egg = window.eggs.find(e => e.id === eggId);
-        if (!egg || !egg.dailyWeights) return;
+        if (!egg || !egg.dailyWeights) {
+            console.error("Egg or dailyWeights not found:", egg);
+            return;
+        }
         
         // Update the local dailyWeights array
         egg.dailyWeights[day].weight = weight;
+        console.log(`Local dailyWeights updated for day ${day}`);
+        
+        // Create the update path
+        const updatePath = `dailyWeights.${day}.weight`;
+        console.log(`Firebase update path: ${updatePath}`);
         
         // Update the database
         window.eggsCollection.doc(eggId).update({
-            [`dailyWeights.${day}.weight`]: weight
+            [updatePath]: weight
         }).then(() => {
-            console.log(`Updated weight for day ${day} to ${weight}g`);
+            console.log(`Successfully updated weight for day ${day} to ${weight}g in Firebase`);
             window.showToast('Weight updated successfully');
+            
+            // Refresh the table to update any visual indicators
+            renderDailyWeightsTable(egg);
         }).catch(error => {
-            console.error("Error updating weight:", error);
-            window.showToast('Error updating weight');
+            console.error("Error updating weight:", error.code, error.message);
+            window.showToast('Error updating weight: ' + error.message);
         });
     }
     
