@@ -1,0 +1,103 @@
+/* egg-types.css - Styles for the egg types management */
+
+/* Management Page Styles */
+.management-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.management-header p {
+    color: var(--text-secondary);
+    max-width: 60%;
+}
+
+.egg-types-list {
+    display: grid;
+    gap: 16px;
+}
+
+.egg-type-card {
+    background: var(--card-bg);
+    border-radius: var(--border-radius);
+    padding: 16px;
+    box-shadow: var(--box-shadow);
+    border: 1px solid var(--border-color);
+}
+
+.egg-type-card .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.egg-type-card h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.egg-type-card .actions {
+    display: flex;
+    gap: 8px;
+}
+
+.egg-type-card .action-btn {
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.egg-type-card .action-btn:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    color: var(--primary-color);
+}
+
+.egg-type-card .action-btn.delete:hover {
+    color: var(--error-color);
+}
+
+.egg-type-card .detail-item {
+    margin-bottom: 8px;
+    font-size: 0.95rem;
+}
+
+.egg-type-card .detail-item .label {
+    color: var(--text-secondary);
+    margin-right: 8px;
+}
+
+.egg-type-card .detail-item .value {
+    font-weight: 500;
+}
+
+.egg-type-card .notes {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-color);
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.section-divider {
+    height: 1px;
+    background-color: var(--border-color);
+    margin: 30px 0;
+}
+
+.section-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 20px;
+    color: var(--text-primary);
+}
