@@ -1,7 +1,5 @@
 // eggWeightInterpolation.js - Handles interpolation of unknown weights between known weight points
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("Egg Weight Interpolation module initializing...");
-    
     // Constants
     const INTERPOLATED_WEIGHT_CLASS = 'interpolated-weight';
     
@@ -9,31 +7,45 @@ document.addEventListener('DOMContentLoaded', function() {
     function initializeWeightInterpolation() {
         // Check if weight tracking module is loaded
         if (!window.eggWeightTracking) {
-            console.error("Weight tracking module not loaded yet. Waiting...");
             // Try again in 500ms
             setTimeout(initializeWeightInterpolation, 500);
             return;
         }
         
         // Override the saveAllWeights function to include interpolation
-        const originalSaveAllWeights = window.eggWeightTracking.saveAllWeights;
-        window.eggWeightTracking.saveAllWeights = async function() {
-            // First call the original function to save entered weights
-            await originalSaveAllWeights();
+        if (typeof window.eggWeightTracking.saveAllWeights === 'function') {
+            const originalSaveAllWeights = window.eggWeightTracking.saveAllWeights;
             
-            // Then perform interpolation
-            await interpolateUnknownWeights();
-        };
+            // Replace the function
+            window.eggWeightTracking.saveAllWeights = async function() {
+                try {
+                    // First call the original function to save entered weights
+                    await originalSaveAllWeights();
+                    
+                    // Then perform interpolation
+                    await interpolateUnknownWeights();
+                } catch (error) {
+                    window.showToast('Error updating weights: ' + (error.message || 'Unknown error'));
+                }
+            };
+        }
         
         // Add styles for interpolated weights
         addInterpolationStyles();
         
-        console.log("Egg Weight Interpolation module initialized");
+        // Override the render function
+        overrideRenderFunction();
     }
     
     // Add CSS styles for interpolated weights
     function addInterpolationStyles() {
+        // Check if styles already exist to avoid duplicates
+        if (document.getElementById('interpolated-weight-styles')) {
+            return;
+        }
+        
         const styleElement = document.createElement('style');
+        styleElement.id = 'interpolated-weight-styles';
         styleElement.textContent = `
             .${INTERPOLATED_WEIGHT_CLASS} {
                 color: #777;
@@ -55,38 +67,41 @@ document.addEventListener('DOMContentLoaded', function() {
     async function interpolateUnknownWeights() {
         // Ensure we have current egg data
         if (!window.currentEggId || !window.eggs) {
-            console.error("No current egg data available for interpolation");
             return;
         }
         
         // Get the current egg data
         const currentEgg = window.eggs.find(egg => egg.id === window.currentEggId);
         if (!currentEgg || !Array.isArray(currentEgg.dailyWeights)) {
-            console.error("Invalid egg data or missing daily weights array");
             return;
         }
-        
-        console.log("Starting weight interpolation for egg:", currentEgg.name);
         
         // Create a copy of the dailyWeights array to avoid reference issues
         const updatedWeights = JSON.parse(JSON.stringify(currentEgg.dailyWeights));
         
-        // Find days with known weights (user-entered)
+        // Find days with known weights (user-entered) - exclude interpolated weights
         const knownWeightDays = updatedWeights
-            .filter(day => day.weight !== null)
+            .filter(day => day.weight !== null && !day.interpolated)
             .map(day => ({
                 day: day.day,
                 weight: parseFloat(day.weight)
             }));
         
-        // Make sure we have at least one known weight (should be the initial weight at day 0)
+        // Make sure we have at least one known weight
         if (knownWeightDays.length === 0) {
-            console.warn("No known weights found, cannot interpolate");
             return;
         }
         
         // Sort by day to ensure proper order
         knownWeightDays.sort((a, b) => a.day - b.day);
+        
+        // Reset all interpolated flags before recalculating
+        updatedWeights.forEach(day => {
+            if (day.interpolated) {
+                day.weight = null;
+                day.interpolated = false;
+            }
+        });
         
         // Calculate interpolation between known points
         calculateInterpolation(updatedWeights, knownWeightDays);
@@ -96,8 +111,6 @@ document.addEventListener('DOMContentLoaded', function() {
             await window.eggsCollection.doc(currentEgg.id).update({
                 dailyWeights: updatedWeights
             });
-            
-            console.log("Weight interpolation completed and saved");
             
             // Update the current egg data
             currentEgg.dailyWeights = updatedWeights;
@@ -113,7 +126,6 @@ document.addEventListener('DOMContentLoaded', function() {
             
             window.showToast('Weights updated with interpolation');
         } catch (error) {
-            console.error("Error saving interpolated weights:", error);
             window.showToast('Error updating weights: ' + (error.message || 'Unknown error'));
         }
     }
@@ -138,10 +150,11 @@ document.addEventListener('DOMContentLoaded', function() {
             for (let day = startPoint.day + 1; day < endPoint.day; day++) {
                 const daysFromStart = day - startPoint.day;
                 const interpolatedWeight = startPoint.weight + (dailyLossRate * daysFromStart);
+                const formattedWeight = parseFloat(interpolatedWeight.toFixed(2));
                 
                 // Update the weight in the dailyWeights array and mark as interpolated
                 if (day < dailyWeights.length) {
-                    dailyWeights[day].weight = parseFloat(interpolatedWeight.toFixed(2));
+                    dailyWeights[day].weight = formattedWeight;
                     dailyWeights[day].interpolated = true;
                 }
             }
@@ -165,10 +178,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     // Ensure weight doesn't go below zero
                     const finalWeight = Math.max(0, interpolatedWeight);
+                    const formattedWeight = parseFloat(finalWeight.toFixed(2));
                     
                     // Update the weight and mark as interpolated
                     if (day < dailyWeights.length) {
-                        dailyWeights[day].weight = parseFloat(finalWeight.toFixed(2));
+                        dailyWeights[day].weight = formattedWeight;
                         dailyWeights[day].interpolated = true;
                     }
                 }
@@ -255,9 +269,6 @@ document.addEventListener('DOMContentLoaded', function() {
         renderInterpolatedWeights
     };
     
-    // Start initialization after a short delay
-    setTimeout(() => {
-        initializeWeightInterpolation();
-        overrideRenderFunction();
-    }, 1000);
+    // Start initialization
+    setTimeout(initializeWeightInterpolation, 300);
 });
