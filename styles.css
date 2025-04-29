@@ -769,6 +769,7 @@ header h1 {
     align-items: center;
     gap: 10px;
 }
+
 /* Weight Table Styles */
 .table-container {
     width: 100%;
@@ -805,56 +806,43 @@ header h1 {
     background-color: rgba(0, 0, 0, 0.02);
 }
 
+/* Improved weight input styling */
 .weight-input {
-    width: 80px;
+    width: 100px;
     padding: 8px 10px;
     border: 1px solid var(--border-color);
     border-radius: 6px;
     font-size: 0.9rem;
     background-color: rgba(0, 0, 0, 0.02);
+    transition: var(--transition);
 }
 
 .weight-input:focus {
     border-color: var(--accent-color-secondary);
     outline: none;
     background-color: white;
+    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.1);
 }
 
+/* Weight deviations */
 .weight-deviation-high {
     color: var(--error-color);
+    border-color: var(--error-color);
 }
 
 .weight-deviation-low {
     color: var(--accent-color);
-}
-/* Weight input group styling */
-.weight-input-group {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+    border-color: var(--accent-color);
 }
 
-.save-weight-btn {
-    background-color: var(--accent-color-secondary);
-    color: white;
-    border: none;
-    border-radius: 6px;
-    padding: 6px 10px;
-    font-size: 0.8rem;
-    cursor: pointer;
-    transition: var(--transition);
-    display: flex;
-    align-items: center;
-    gap: 5px;
+/* Update weights button container */
+.update-weights-container {
+    margin: 15px 0;
+    text-align: center;
 }
 
-.save-weight-btn:hover {
-    background-color: #0056b3;
-    transform: translateY(-1px);
-}
-
-.save-weight-btn i {
-    font-size: 0.75rem;
+.update-weights-container .btn {
+    min-width: 180px;
 }
 
 /* Make table rows clickable */
@@ -865,21 +853,4 @@ header h1 {
 
 .weight-row:hover {
     background-color: rgba(0, 0, 0, 0.03) !important;
-}
-
-/* Adjust the weight input width to fit in the layout */
-.weight-input {
-    width: 70px;
-    padding: 8px 10px;
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    font-size: 0.9rem;
-    background-color: rgba(0, 0, 0, 0.02);
-}
-
-.weight-input:focus {
-    border-color: var(--accent-color-secondary);
-    outline: none;
-    background-color: white;
-    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.1);
 }
