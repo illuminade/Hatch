@@ -1,0 +1,9 @@
+/* index.css - Main CSS file that imports all modular CSS files */
+
+@import 'css/base.css';
+@import 'css/layout.css';
+@import 'css/components.css';
+@import 'css/egg-list.css';
+@import 'css/egg-details.css';
+@import 'css/egg-types.css';
+@import 'css/weight-tracking.css';
