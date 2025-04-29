@@ -24,6 +24,11 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Create and add the update weights button
     function createUpdateWeightsButton() {
+        // Check if the button already exists
+        if (document.getElementById('updateWeightsBtn')) {
+            return;
+        }
+        
         // Create button container
         const buttonContainer = document.createElement('div');
         buttonContainer.className = 'update-weights-container';
@@ -189,15 +194,14 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const eggId = currentEggData.id;
         
-        // Find the egg in the global eggs array
-        const egg = window.eggs.find(e => e.id === eggId);
-        if (!egg || !Array.isArray(egg.dailyWeights)) {
-            window.showToast('Error: Egg data not found');
+        // Make a direct reference to the current egg data to avoid any reference issues
+        if (!Array.isArray(currentEggData.dailyWeights)) {
+            window.showToast('Error: Weight data not available');
             return;
         }
         
         // Create a copy of the dailyWeights array to avoid reference issues
-        const updatedDailyWeights = [...egg.dailyWeights];
+        const updatedDailyWeights = JSON.parse(JSON.stringify(currentEggData.dailyWeights));
         let hasChanges = false;
         
         // Go through each day and check for updates
@@ -223,14 +227,19 @@ document.addEventListener('DOMContentLoaded', function() {
             }).then(() => {
                 window.showToast('Weights updated successfully');
                 
-                // Update the local copy of the egg data
-                egg.dailyWeights = updatedDailyWeights;
-                currentEggData = egg;
+                // Update the current egg data
+                currentEggData.dailyWeights = updatedDailyWeights;
+                
+                // Update the global eggs array
+                const eggIndex = window.eggs.findIndex(e => e.id === eggId);
+                if (eggIndex !== -1) {
+                    window.eggs[eggIndex].dailyWeights = updatedDailyWeights;
+                }
                 
                 // Re-render the weight table with updated data
-                renderDailyWeightsTable(egg);
+                renderDailyWeightsTable(currentEggData);
             }).catch(error => {
-                window.showToast('Error updating weights');
+                window.showToast('Error updating weights: ' + (error.message || 'Unknown error'));
             });
         } else {
             window.showToast('No changes to update');
