@@ -251,7 +251,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Make functions available globally
     window.eggWeightInterpolation = {
-        interpolateUnknownWeights
+        interpolateUnknownWeights,
+        renderInterpolatedWeights
     };
     
     // Start initialization after a short delay
