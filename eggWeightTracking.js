@@ -97,6 +97,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // Add rows for each day
         egg.dailyWeights.forEach((dayData, index) => {
             const row = document.createElement('tr');
+            row.className = 'weight-row';
+            row.dataset.day = dayData.day;
             
             // Format the date
             const dateObj = new Date(dayData.date);
@@ -111,14 +113,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
             
-            // Create the row content
+            // Create the row content with a save button
             row.innerHTML = `
                 <td>${dayData.day}</td>
                 <td>${formattedDate}</td>
                 <td>
-                    <input type="number" class="weight-input ${weightClassname}" data-day="${dayData.day}" 
-                           value="${dayData.weight !== null ? dayData.weight : ''}" 
-                           placeholder="Enter weight" step="0.01" min="0">
+                    <div class="weight-input-group">
+                        <input type="number" class="weight-input ${weightClassname}" 
+                               id="weight-day-${dayData.day}"
+                               value="${dayData.weight !== null ? dayData.weight : ''}" 
+                               placeholder="Enter weight" step="0.01" min="0">
+                        <button type="button" class="save-weight-btn" data-day="${dayData.day}">
+                            <i class="fas fa-save"></i> Save
+                        </button>
+                    </div>
                 </td>
                 <td>${dayData.targetWeight.toFixed(2)} g</td>
             `;
@@ -127,36 +135,35 @@ document.addEventListener('DOMContentLoaded', function() {
             dailyWeightTableBody.appendChild(row);
         });
         
-        // Add event listeners to the weight inputs
-        const weightInputs = dailyWeightTableBody.querySelectorAll('.weight-input');
-        weightInputs.forEach(input => {
-            // Log to verify inputs are found
-            console.log(`Adding event listeners to input for day ${input.dataset.day}`);
-
-            // Add both blur and change events to catch all user interactions
-            input.addEventListener('blur', function() {
-                console.log(`Blur event triggered for day ${this.dataset.day} with value ${this.value}`);
-                if (this.value) {
-                    updateEggWeight(egg.id, parseInt(this.dataset.day), parseFloat(this.value));
+        // Add event listeners to the save buttons
+        const saveButtons = dailyWeightTableBody.querySelectorAll('.save-weight-btn');
+        saveButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const day = parseInt(this.dataset.day);
+                const input = document.getElementById(`weight-day-${day}`);
+                
+                if (input && input.value) {
+                    const weight = parseFloat(input.value);
+                    console.log(`Saving weight for day ${day}: ${weight}g`);
+                    updateEggWeight(egg.id, day, weight);
+                } else {
+                    window.showToast('Please enter a weight value');
                 }
             });
-            
-            input.addEventListener('change', function() {
-                console.log(`Change event triggered for day ${this.dataset.day} with value ${this.value}`);
-                if (this.value) {
-                    updateEggWeight(egg.id, parseInt(this.dataset.day), parseFloat(this.value));
-                }
-            });
-
-            // Also catch the enter key being pressed
-            input.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    console.log(`Enter key pressed for day ${this.dataset.day} with value ${this.value}`);
-                    e.preventDefault();
-                    if (this.value) {
-                        updateEggWeight(egg.id, parseInt(this.dataset.day), parseFloat(this.value));
-                        // Remove focus from input
-                        this.blur();
+        });
+        
+        // Make rows clickable to focus on the input
+        const rows = dailyWeightTableBody.querySelectorAll('.weight-row');
+        rows.forEach(row => {
+            row.addEventListener('click', function(e) {
+                // Don't trigger if clicking on the input or button
+                if (e.target.tagName !== 'INPUT' && 
+                    e.target.tagName !== 'BUTTON' && 
+                    e.target.tagName !== 'I') {
+                    const day = parseInt(this.dataset.day);
+                    const input = document.getElementById(`weight-day-${day}`);
+                    if (input) {
+                        input.focus();
                     }
                 }
             });
