@@ -41,6 +41,13 @@ document.addEventListener('DOMContentLoaded', function() {
             text-align: center;
             padding: 0 !important;
         }
+        
+        .interpolate-weights-btn {
+            margin-left: 10px;
+            background-color: transparent;
+            border: 1px solid #007AFF;
+            color: #007AFF;
+        }
     `;
     document.head.appendChild(styleElement);
     
@@ -79,6 +86,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Modify the table to add delete buttons
                 setTimeout(() => {
                     addDeleteButtons();
+                    addInterpolateButton();
                     applyInterpolationStyling(egg);
                 }, 50);
             };
@@ -90,12 +98,57 @@ document.addEventListener('DOMContentLoaded', function() {
         // Store the current egg data locally
         currentEggData = event.detail.eggData;
         
-        setTimeout(() => {
+        // Run interpolation automatically if we have enough data points
+        setTimeout(async () => {
             if (currentEggData && currentEggData.dailyWeights) {
+                // Check if we have at least 2 non-interpolated weight entries
+                const knownWeightPoints = currentEggData.dailyWeights.filter(
+                    day => day.weight !== null && !day.interpolated
+                );
+                
+                if (knownWeightPoints.length >= 2) {
+                    // If we have enough data points, run interpolation
+                    await runInterpolation(currentEggData.id);
+                }
+                
+                // Add UI elements
                 addDeleteButtons();
+                addInterpolateButton();
                 applyInterpolationStyling(currentEggData);
             }
         }, 100);
+    }
+    
+    // Add interpolate button to the UI
+    function addInterpolateButton() {
+        // Check if button already exists
+        if (document.getElementById('interpolateWeightsBtn')) {
+            return;
+        }
+        
+        // Find the update weights button container
+        const updateBtnContainer = document.querySelector('.update-weights-container');
+        if (!updateBtnContainer) return;
+        
+        // Create interpolate button
+        const interpolateBtn = document.createElement('button');
+        interpolateBtn.id = 'interpolateWeightsBtn';
+        interpolateBtn.className = 'btn interpolate-weights-btn';
+        interpolateBtn.innerHTML = '<i class="fas fa-calculator"></i> Interpolate Missing';
+        
+        // Add event listener
+        interpolateBtn.addEventListener('click', async function() {
+            const eggId = window.currentEggId || (currentEggData ? currentEggData.id : null);
+            if (eggId) {
+                await runInterpolation(eggId);
+                window.showToast('Interpolation complete');
+            } else {
+                window.showToast('Error: Cannot identify the current egg');
+            }
+        });
+        
+        // Add button to container
+        updateBtnContainer.appendChild(interpolateBtn);
     }
     
     // Add delete buttons to the table
@@ -323,6 +376,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // If we don't have enough points for interpolation, just save and return
         if (knownWeightDays.length < 2) {
+            window.showToast('Need at least 2 weight entries for interpolation');
             try {
                 await window.eggsCollection.doc(effectiveEggId).update({
                     dailyWeights: updatedWeights
@@ -349,6 +403,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Calculate interpolation
         const totalDays = updatedWeights.length - 1;
+        let interpolatedCount = 0;
         
         // Interpolate between known points
         for (let i = 0; i < knownWeightDays.length - 1; i++) {
@@ -367,6 +422,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 updatedWeights[day].weight = parseFloat(interpolatedWeight.toFixed(2));
                 updatedWeights[day].interpolated = true;
+                interpolatedCount++;
             }
         }
         
@@ -387,6 +443,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     updatedWeights[day].weight = parseFloat(Math.max(0, projectedWeight).toFixed(2));
                     updatedWeights[day].interpolated = true;
+                    interpolatedCount++;
                 }
             }
         }
@@ -411,7 +468,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Apply styling
             applyInterpolationStyling(eggData);
             
-            window.showToast('Weights updated with interpolation');
+            window.showToast(`Interpolated ${interpolatedCount} weights`);
         } catch (error) {
             window.showToast('Error updating weights');
         }
@@ -422,6 +479,7 @@ document.addEventListener('DOMContentLoaded', function() {
         runInterpolation,
         applyInterpolationStyling,
         deleteWeight,
-        addDeleteButtons
+        addDeleteButtons,
+        addInterpolateButton
     };
 });
