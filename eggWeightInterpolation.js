@@ -42,11 +42,26 @@ document.addEventListener('DOMContentLoaded', function() {
             padding: 0 !important;
         }
         
+        .update-weights-container {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin: 15px 0;
+        }
+        
         .interpolate-weights-btn {
             margin-left: 10px;
             background-color: transparent;
             border: 1px solid #007AFF;
             color: #007AFF;
+        }
+        
+        .interpolation-info {
+            margin-bottom: 10px;
+            font-size: 0.85rem;
+            color: #777;
+            font-style: italic;
         }
     `;
     document.head.appendChild(styleElement);
@@ -88,7 +103,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     addDeleteButtons();
                     addInterpolateButton();
                     applyInterpolationStyling(egg);
-                }, 50);
+                }, 100); // Increased timeout to ensure the table is fully rendered
             };
         }
     }
@@ -116,7 +131,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 addInterpolateButton();
                 applyInterpolationStyling(currentEggData);
             }
-        }, 100);
+        }, 300); // Increased timeout to ensure all DOM elements are ready
     }
     
     // Add interpolate button to the UI
@@ -126,9 +141,44 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // Find the update weights button container
-        const updateBtnContainer = document.querySelector('.update-weights-container');
-        if (!updateBtnContainer) return;
+        // Find or create the update weights button container
+        let updateBtnContainer = document.querySelector('.update-weights-container');
+        
+        if (!updateBtnContainer) {
+            // Container doesn't exist, create it
+            updateBtnContainer = document.createElement('div');
+            updateBtnContainer.className = 'update-weights-container';
+            
+            // Find the table to append after it
+            const table = document.getElementById('dailyWeightTable');
+            if (table && table.parentNode) {
+                table.parentNode.insertBefore(updateBtnContainer, table.nextSibling);
+            } else {
+                // If table not found, try to add to the container that should have the table
+                const container = document.querySelector('.table-container');
+                if (container && container.parentNode) {
+                    container.parentNode.insertBefore(updateBtnContainer, container.nextSibling);
+                } else {
+                    console.error('Could not find proper place to add button container');
+                    return;
+                }
+            }
+            
+            // Create update weights button if it doesn't exist
+            if (!document.getElementById('updateWeightsBtn')) {
+                const updateBtn = document.createElement('button');
+                updateBtn.id = 'updateWeightsBtn';
+                updateBtn.className = 'btn btn-primary';
+                updateBtn.innerHTML = '<i class="fas fa-save"></i> Update Weights';
+                updateBtn.addEventListener('click', function() {
+                    if (window.eggWeightTracking && window.eggWeightTracking.saveAllWeights) {
+                        window.eggWeightTracking.saveAllWeights();
+                    }
+                });
+                
+                updateBtnContainer.appendChild(updateBtn);
+            }
+        }
         
         // Create interpolate button
         const interpolateBtn = document.createElement('button');
@@ -291,6 +341,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
         } catch (error) {
             window.showToast('Error removing weight');
+            console.error('Error removing weight:', error);
         }
     }
     
@@ -397,6 +448,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 applyInterpolationStyling(eggData);
             } catch (error) {
                 window.showToast('Error updating weights');
+                console.error('Error updating weights:', error);
             }
             return;
         }
@@ -471,6 +523,7 @@ document.addEventListener('DOMContentLoaded', function() {
             window.showToast(`Interpolated ${interpolatedCount} weights`);
         } catch (error) {
             window.showToast('Error updating weights');
+            console.error('Error updating weights:', error);
         }
     }
     
