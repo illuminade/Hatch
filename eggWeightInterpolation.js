@@ -44,6 +44,9 @@ document.addEventListener('DOMContentLoaded', function() {
     `;
     document.head.appendChild(styleElement);
     
+    // Track the current egg data
+    let currentEggData = null;
+    
     // Initialize functionality
     setTimeout(initializeInterpolation, 500);
     
@@ -84,11 +87,13 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Handle egg details loaded event
     function handleEggDetailsLoaded(event) {
+        // Store the current egg data locally
+        currentEggData = event.detail.eggData;
+        
         setTimeout(() => {
-            const egg = event.detail.eggData;
-            if (egg && egg.dailyWeights) {
+            if (currentEggData && currentEggData.dailyWeights) {
                 addDeleteButtons();
-                applyInterpolationStyling(egg);
+                applyInterpolationStyling(currentEggData);
             }
         }, 100);
     }
@@ -153,7 +158,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Delete the weight
                 const dayToDelete = parseInt(this.dataset.day);
                 if (!isNaN(dayToDelete)) {
-                    deleteWeight(dayToDelete);
+                    // Use the stored egg ID
+                    const eggId = window.currentEggId || (currentEggData ? currentEggData.id : null);
+                    if (eggId) {
+                        deleteWeight(dayToDelete, eggId);
+                    } else {
+                        window.showToast('Error: Cannot identify the current egg');
+                    }
                 }
             });
             
@@ -166,21 +177,25 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Delete a weight for a specific day
-    async function deleteWeight(day) {
-        // Verify we have current egg data
-        if (!window.currentEggId || !window.eggs) {
-            console.error('No current egg data available');
+    async function deleteWeight(day, eggId) {
+        // Use the provided egg ID or try to get from global state
+        const effectiveEggId = eggId || window.currentEggId;
+        
+        if (!effectiveEggId) {
+            window.showToast('Error: No egg ID available');
             return;
         }
         
-        const currentEgg = window.eggs.find(egg => egg.id === window.currentEggId);
-        if (!currentEgg || !Array.isArray(currentEgg.dailyWeights) || day >= currentEgg.dailyWeights.length) {
-            console.error('Invalid egg data or day out of range', day);
+        // Find the egg data
+        const eggData = window.eggs.find(egg => egg.id === effectiveEggId) || currentEggData;
+        
+        if (!eggData || !Array.isArray(eggData.dailyWeights) || day >= eggData.dailyWeights.length) {
+            window.showToast('Error: Invalid egg data');
             return;
         }
         
         // Make a copy of the dailyWeights array
-        const updatedWeights = JSON.parse(JSON.stringify(currentEgg.dailyWeights));
+        const updatedWeights = JSON.parse(JSON.stringify(eggData.dailyWeights));
         
         // Set weight to null for this day and remove interpolation flag
         updatedWeights[day].weight = null;
@@ -188,15 +203,17 @@ document.addEventListener('DOMContentLoaded', function() {
         
         try {
             // Update in Firebase
-            await window.eggsCollection.doc(currentEgg.id).update({
+            await window.eggsCollection.doc(effectiveEggId).update({
                 dailyWeights: updatedWeights
             });
             
-            // Update local data
-            currentEgg.dailyWeights = updatedWeights;
+            // Update the egg data
+            if (currentEggData && currentEggData.id === effectiveEggId) {
+                currentEggData.dailyWeights = updatedWeights;
+            }
             
             // Update the global eggs array
-            const eggIndex = window.eggs.findIndex(e => e.id === currentEgg.id);
+            const eggIndex = window.eggs.findIndex(e => e.id === effectiveEggId);
             if (eggIndex !== -1) {
                 window.eggs[eggIndex].dailyWeights = updatedWeights;
             }
@@ -217,18 +234,17 @@ document.addEventListener('DOMContentLoaded', function() {
             window.showToast('Weight removed');
             
             // Run interpolation
-            await runInterpolation();
+            await runInterpolation(effectiveEggId);
             
         } catch (error) {
-            console.error('Error removing weight:', error);
-            window.showToast('Error removing weight: ' + (error.message || 'Unknown error'));
+            window.showToast('Error removing weight');
         }
     }
     
     // Apply styling to interpolated weights
     function applyInterpolationStyling(egg) {
         const tableBody = document.getElementById('dailyWeightTableBody');
-        if (!tableBody || !egg.dailyWeights) return;
+        if (!tableBody || !egg || !egg.dailyWeights) return;
         
         egg.dailyWeights.forEach(dayData => {
             // Find the cell for this day
@@ -266,15 +282,25 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Main interpolation function
-    async function runInterpolation() {
-        // Get the current egg data
-        if (!window.currentEggId || !window.eggs) return;
+    async function runInterpolation(eggId) {
+        // Use provided egg ID or try to get from global state
+        const effectiveEggId = eggId || window.currentEggId;
         
-        const currentEgg = window.eggs.find(egg => egg.id === window.currentEggId);
-        if (!currentEgg || !Array.isArray(currentEgg.dailyWeights)) return;
+        if (!effectiveEggId) {
+            window.showToast('Error: No egg ID available for interpolation');
+            return;
+        }
+        
+        // Find the egg data
+        const eggData = window.eggs.find(egg => egg.id === effectiveEggId) || currentEggData;
+        
+        if (!eggData || !Array.isArray(eggData.dailyWeights)) {
+            window.showToast('Error: Invalid egg data for interpolation');
+            return;
+        }
         
         // Make a copy of the dailyWeights array
-        const updatedWeights = JSON.parse(JSON.stringify(currentEgg.dailyWeights));
+        const updatedWeights = JSON.parse(JSON.stringify(eggData.dailyWeights));
         
         // Reset interpolated weights first
         updatedWeights.forEach(day => {
@@ -298,21 +324,23 @@ document.addEventListener('DOMContentLoaded', function() {
         // If we don't have enough points for interpolation, just save and return
         if (knownWeightDays.length < 2) {
             try {
-                await window.eggsCollection.doc(currentEgg.id).update({
+                await window.eggsCollection.doc(effectiveEggId).update({
                     dailyWeights: updatedWeights
                 });
                 
-                // Update local data
-                currentEgg.dailyWeights = updatedWeights;
+                // Update the egg data
+                if (currentEggData && currentEggData.id === effectiveEggId) {
+                    currentEggData.dailyWeights = updatedWeights;
+                }
                 
                 // Update the global eggs array
-                const eggIndex = window.eggs.findIndex(e => e.id === currentEgg.id);
+                const eggIndex = window.eggs.findIndex(e => e.id === effectiveEggId);
                 if (eggIndex !== -1) {
                     window.eggs[eggIndex].dailyWeights = updatedWeights;
                 }
                 
                 // Apply styling
-                applyInterpolationStyling(currentEgg);
+                applyInterpolationStyling(eggData);
             } catch (error) {
                 window.showToast('Error updating weights');
             }
@@ -365,21 +393,23 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Save the updated weights
         try {
-            await window.eggsCollection.doc(currentEgg.id).update({
+            await window.eggsCollection.doc(effectiveEggId).update({
                 dailyWeights: updatedWeights
             });
             
-            // Update local data
-            currentEgg.dailyWeights = updatedWeights;
+            // Update the egg data
+            if (currentEggData && currentEggData.id === effectiveEggId) {
+                currentEggData.dailyWeights = updatedWeights;
+            }
             
             // Update the global eggs array
-            const eggIndex = window.eggs.findIndex(e => e.id === currentEgg.id);
+            const eggIndex = window.eggs.findIndex(e => e.id === effectiveEggId);
             if (eggIndex !== -1) {
                 window.eggs[eggIndex].dailyWeights = updatedWeights;
             }
             
             // Apply styling
-            applyInterpolationStyling(currentEgg);
+            applyInterpolationStyling(eggData);
             
             window.showToast('Weights updated with interpolation');
         } catch (error) {
