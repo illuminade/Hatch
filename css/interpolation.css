@@ -1,18 +1,57 @@
-/* Additional CSS styles for interpolation features */
+/* Enhanced CSS styles for interpolation features */
 
+/* Interpolated weight - more obvious styling */
 .interpolated-weight {
     color: #777;
     font-style: italic;
+    background-color: rgba(200, 200, 200, 0.2);
+    border-radius: 4px;
+    padding: 2px 4px;
+    position: relative;
 }
 
+/* Add a small calculator icon to interpolated values */
+.interpolated-weight::before {
+    content: "\f1ec"; /* Calculator icon from FontAwesome */
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 900;
+    font-size: 0.7em;
+    margin-right: 4px;
+    opacity: 0.7;
+    position: relative;
+    top: -1px;
+}
+
+/* For high deviation (over target) */
 .interpolated-weight.weight-deviation-high {
-    color: rgba(255, 59, 48, 0.7);
+    color: rgba(255, 59, 48, 0.8);
+    background-color: rgba(255, 59, 48, 0.1);
 }
 
+/* For low deviation (under target) */
 .interpolated-weight.weight-deviation-low {
-    color: rgba(76, 217, 100, 0.7);
+    color: rgba(76, 217, 100, 0.8);
+    background-color: rgba(76, 217, 100, 0.1);
 }
 
+/* Manual weight styling - make it appear stronger */
+.weight-display:not(.interpolated-weight) {
+    font-weight: 500;
+}
+
+/* For manual high deviation */
+.weight-deviation-high:not(.interpolated-weight) {
+    color: var(--error-color);
+    font-weight: 600;
+}
+
+/* For manual low deviation */
+.weight-deviation-low:not(.interpolated-weight) {
+    color: var(--accent-color);
+    font-weight: 600;
+}
+
+/* Delete button styling */
 .weight-delete-btn {
     background: none;
     border: none;
@@ -36,45 +75,70 @@
     padding: 0 !important;
 }
 
-.interpolate-weights-btn {
-    margin-left: 10px;
-    background-color: transparent;
-    border: 1px solid #007AFF;
-    color: #007AFF;
-}
-
+/* Improved legend for explaining the difference */
 .interpolation-info {
-    margin-bottom: 10px;
-    font-size: 0.85rem;
-    color: #777;
-    font-style: italic;
+    margin-bottom: 15px;
+    font-size: 0.9rem;
+    color: #444;
+    background-color: rgba(0, 0, 0, 0.03);
+    padding: 8px 12px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
-/* Make the update weights container more flexible for multiple buttons */
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.legend-example {
+    padding: 2px 6px;
+}
+
+.legend-example.manual {
+    font-weight: 500;
+}
+
+.legend-example.interpolated {
+    font-style: italic;
+    background-color: rgba(200, 200, 200, 0.2);
+    border-radius: 4px;
+}
+
+.legend-example.interpolated::before {
+    content: "\f1ec";
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 900;
+    font-size: 0.7em;
+    margin-right: 4px;
+    opacity: 0.7;
+}
+
+/* Button styling */
+.btn-update-interpolate {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-weight: 600;
+    min-width: 200px;
+    margin: 0 auto;
+}
+
 .update-weights-container {
     display: flex;
     justify-content: center;
-    gap: 10px;
-    flex-wrap: wrap;
     margin: 15px 0;
-}
-
-.update-weights-container .btn {
-    flex: 1;
-    min-width: 150px;
-    max-width: 200px;
 }
 
 /* Ensure proper spacing on mobile devices */
 @media (max-width: 480px) {
-    .update-weights-container {
+    .interpolation-info {
         flex-direction: column;
-        align-items: center;
-    }
-    
-    .update-weights-container .btn {
-        width: 100%;
-        max-width: none;
-        margin-bottom: 8px;
+        align-items: flex-start;
+        gap: 6px;
     }
 }
