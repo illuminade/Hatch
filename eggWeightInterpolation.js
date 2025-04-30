@@ -1,4 +1,4 @@
-// eggWeightInterpolation.js - Direct implementation for weight interpolation with dustbin delete buttons
+// eggWeightInterpolation.js - With combined update & interpolate button
 document.addEventListener('DOMContentLoaded', function() {
     // Constants
     const INTERPOLATED_WEIGHT_CLASS = 'interpolated-weight';
@@ -45,16 +45,17 @@ document.addEventListener('DOMContentLoaded', function() {
         .update-weights-container {
             display: flex;
             justify-content: center;
-            gap: 10px;
-            flex-wrap: wrap;
             margin: 15px 0;
         }
         
-        .interpolate-weights-btn {
-            margin-left: 10px;
-            background-color: transparent;
-            border: 1px solid #007AFF;
-            color: #007AFF;
+        .btn-update-interpolate {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-weight: 600;
+            min-width: 200px;
+            margin: 0 auto;
         }
         
         .interpolation-info {
@@ -101,7 +102,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Modify the table to add delete buttons
                 setTimeout(() => {
                     addDeleteButtons();
-                    addInterpolateButton();
+                    createCombinedButton();
                     applyInterpolationStyling(egg);
                 }, 100); // Increased timeout to ensure the table is fully rendered
             };
@@ -128,17 +129,28 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Add UI elements
                 addDeleteButtons();
-                addInterpolateButton();
+                createCombinedButton();
                 applyInterpolationStyling(currentEggData);
             }
         }, 300); // Increased timeout to ensure all DOM elements are ready
     }
     
-    // Add interpolate button to the UI
-    function addInterpolateButton() {
+    // Create a combined update & interpolate button
+    function createCombinedButton() {
         // Check if button already exists
-        if (document.getElementById('interpolateWeightsBtn')) {
+        if (document.getElementById('updateInterpolateBtn')) {
             return;
+        }
+        
+        // Remove any existing update or interpolate buttons
+        const existingUpdateBtn = document.getElementById('updateWeightsBtn');
+        if (existingUpdateBtn && existingUpdateBtn.parentNode) {
+            existingUpdateBtn.parentNode.removeChild(existingUpdateBtn);
+        }
+        
+        const existingInterpolateBtn = document.getElementById('interpolateWeightsBtn');
+        if (existingInterpolateBtn && existingInterpolateBtn.parentNode) {
+            existingInterpolateBtn.parentNode.removeChild(existingInterpolateBtn);
         }
         
         // Find or create the update weights button container
@@ -163,42 +175,43 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
             }
-            
-            // Create update weights button if it doesn't exist
-            if (!document.getElementById('updateWeightsBtn')) {
-                const updateBtn = document.createElement('button');
-                updateBtn.id = 'updateWeightsBtn';
-                updateBtn.className = 'btn btn-primary';
-                updateBtn.innerHTML = '<i class="fas fa-save"></i> Update Weights';
-                updateBtn.addEventListener('click', function() {
-                    if (window.eggWeightTracking && window.eggWeightTracking.saveAllWeights) {
-                        window.eggWeightTracking.saveAllWeights();
-                    }
-                });
-                
-                updateBtnContainer.appendChild(updateBtn);
-            }
+        } else {
+            // Clear the container
+            updateBtnContainer.innerHTML = '';
         }
         
-        // Create interpolate button
-        const interpolateBtn = document.createElement('button');
-        interpolateBtn.id = 'interpolateWeightsBtn';
-        interpolateBtn.className = 'btn interpolate-weights-btn';
-        interpolateBtn.innerHTML = '<i class="fas fa-calculator"></i> Interpolate Missing';
+        // Create combined update & interpolate button
+        const combinedBtn = document.createElement('button');
+        combinedBtn.id = 'updateInterpolateBtn';
+        combinedBtn.className = 'btn btn-primary btn-update-interpolate';
+        combinedBtn.innerHTML = '<i class="fas fa-save"></i> <i class="fas fa-calculator"></i> Update & Interpolate';
         
         // Add event listener
-        interpolateBtn.addEventListener('click', async function() {
+        combinedBtn.addEventListener('click', async function() {
             const eggId = window.currentEggId || (currentEggData ? currentEggData.id : null);
-            if (eggId) {
+            if (!eggId) {
+                window.showToast('Error: Cannot identify the current egg');
+                return;
+            }
+            
+            // First update the weights
+            if (window.eggWeightTracking && window.eggWeightTracking.saveAllWeights) {
+                try {
+                    // saveAllWeights now includes running interpolation
+                    await window.eggWeightTracking.saveAllWeights();
+                } catch (error) {
+                    console.error('Error updating weights:', error);
+                    window.showToast('Error updating weights');
+                }
+            } else {
+                // If saveAllWeights not available, run interpolation directly
                 await runInterpolation(eggId);
                 window.showToast('Interpolation complete');
-            } else {
-                window.showToast('Error: Cannot identify the current egg');
             }
         });
         
         // Add button to container
-        updateBtnContainer.appendChild(interpolateBtn);
+        updateBtnContainer.appendChild(combinedBtn);
     }
     
     // Add delete buttons to the table
@@ -520,7 +533,9 @@ document.addEventListener('DOMContentLoaded', function() {
             // Apply styling
             applyInterpolationStyling(eggData);
             
-            window.showToast(`Interpolated ${interpolatedCount} weights`);
+            if (interpolatedCount > 0) {
+                window.showToast(`Updated and interpolated ${interpolatedCount} weights`);
+            }
         } catch (error) {
             window.showToast('Error updating weights');
             console.error('Error updating weights:', error);
@@ -533,6 +548,6 @@ document.addEventListener('DOMContentLoaded', function() {
         applyInterpolationStyling,
         deleteWeight,
         addDeleteButtons,
-        addInterpolateButton
+        createCombinedButton
     };
 });
