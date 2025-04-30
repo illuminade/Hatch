@@ -6,6 +6,7 @@
     <title>Hatch - Egg Incubation Monitor</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="index.css">
+    <link rel="stylesheet" href="interpolation.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -177,7 +178,14 @@
                     <div class="detail-info-card">
                         <h3>Daily Weight Tracking</h3>
                         <div class="interpolation-info">
-                            <small><i>Italicized values are interpolated from manual entries</i></small>
+                            <div class="legend-item">
+                                <span class="legend-example manual">50.00</span>
+                                <span>Manually entered</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-example interpolated">49.25</span>
+                                <span>Auto-calculated</span>
+                            </div>
                         </div>
                         <div class="table-container">
                             <table id="dailyWeightTable" class="weight-table">
