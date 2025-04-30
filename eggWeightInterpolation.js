@@ -1,4 +1,4 @@
-// eggWeightInterpolation.js - Direct implementation for weight interpolation with delete buttons
+// eggWeightInterpolation.js - Direct implementation for weight interpolation with dustbin delete buttons
 document.addEventListener('DOMContentLoaded', function() {
     // Constants
     const INTERPOLATED_WEIGHT_CLASS = 'interpolated-weight';
@@ -26,17 +26,24 @@ document.addEventListener('DOMContentLoaded', function() {
             cursor: pointer;
             opacity: 0.6;
             transition: opacity 0.2s;
-            padding: 5px;
-            margin-left: 5px;
+            padding: 6px 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
         .weight-delete-btn:hover {
             opacity: 1;
         }
         
-        .editable-weight {
-            display: flex;
-            align-items: center;
+        .weight-row td:last-child {
+            position: relative;
+        }
+        
+        .weight-row .delete-cell {
+            width: 40px;
+            text-align: center;
+            padding: 0;
         }
     `;
     document.head.appendChild(styleElement);
@@ -70,7 +77,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Call the original render function
                 originalRenderTable.call(this, egg);
                 
-                // Add delete buttons to the table
+                // Modify the table to add delete buttons
                 setTimeout(() => {
                     addDeleteButtons();
                     applyInterpolationStyling(egg);
@@ -95,19 +102,46 @@ document.addEventListener('DOMContentLoaded', function() {
         const tableBody = document.getElementById('dailyWeightTableBody');
         if (!tableBody) return;
         
+        // First, check if the table header has the delete column
+        const table = document.getElementById('dailyWeightTable');
+        if (table) {
+            const headerRow = table.querySelector('thead tr');
+            if (headerRow && !headerRow.querySelector('th:last-child.delete-header')) {
+                // Add a new header cell for the delete column
+                const deleteHeader = document.createElement('th');
+                deleteHeader.className = 'delete-header';
+                deleteHeader.style.width = '40px';
+                headerRow.appendChild(deleteHeader);
+            }
+        }
+        
         // Process each row in the table
-        const cells = tableBody.querySelectorAll('.editable-weight');
-        cells.forEach(cell => {
-            // Skip if this cell already has a delete button
-            if (cell.querySelector('.weight-delete-btn')) return;
+        const rows = tableBody.querySelectorAll('tr.weight-row');
+        rows.forEach(row => {
+            // Skip if this row already has a delete cell
+            if (row.querySelector('.delete-cell')) return;
+            
+            // Get the day number from the row
+            const day = parseInt(row.dataset.day);
+            if (isNaN(day)) return;
             
             // Skip day 0 (initial weight) which should not be removable
-            if (cell.dataset.day === '0') return;
+            if (day === 0) {
+                // Add an empty cell for consistency
+                const emptyCell = document.createElement('td');
+                emptyCell.className = 'delete-cell';
+                row.appendChild(emptyCell);
+                return;
+            }
+            
+            // Create a new cell for the delete button
+            const deleteCell = document.createElement('td');
+            deleteCell.className = 'delete-cell';
             
             // Create delete button
             const deleteBtn = document.createElement('button');
             deleteBtn.className = 'weight-delete-btn';
-            deleteBtn.innerHTML = '<i class="fas fa-times"></i>';
+            deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
             deleteBtn.title = 'Remove weight';
             deleteBtn.setAttribute('type', 'button');
             
@@ -116,16 +150,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 e.preventDefault();
                 e.stopPropagation();
                 
-                // Get the day number from the cell
-                const day = parseInt(cell.dataset.day);
-                if (isNaN(day)) return;
-                
                 // Delete the weight
                 deleteWeight(day);
             });
             
             // Add the button to the cell
-            cell.appendChild(deleteBtn);
+            deleteCell.appendChild(deleteBtn);
+            
+            // Add the cell to the row
+            row.appendChild(deleteCell);
         });
     }
     
@@ -162,12 +195,15 @@ document.addEventListener('DOMContentLoaded', function() {
             // Update the display
             const tableBody = document.getElementById('dailyWeightTableBody');
             if (tableBody) {
-                const cell = tableBody.querySelector(`.editable-weight[data-day="${day}"]`);
-                if (cell) {
-                    const displaySpan = cell.querySelector('.weight-display');
-                    if (displaySpan) {
-                        displaySpan.textContent = 'Click to add';
-                        displaySpan.classList.remove(INTERPOLATED_WEIGHT_CLASS, 'weight-deviation-high', 'weight-deviation-low');
+                const row = tableBody.querySelector(`tr[data-day="${day}"]`);
+                if (row) {
+                    const cell = row.querySelector('.editable-weight');
+                    if (cell) {
+                        const displaySpan = cell.querySelector('.weight-display');
+                        if (displaySpan) {
+                            displaySpan.textContent = 'Click to add';
+                            displaySpan.classList.remove(INTERPOLATED_WEIGHT_CLASS, 'weight-deviation-high', 'weight-deviation-low');
+                        }
                     }
                 }
             }
@@ -188,8 +224,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!tableBody || !egg.dailyWeights) return;
         
         egg.dailyWeights.forEach(dayData => {
-            // Find the cell for this day
-            const cell = tableBody.querySelector(`.editable-weight[data-day="${dayData.day}"]`);
+            // Find the row and cell for this day
+            const row = tableBody.querySelector(`tr[data-day="${dayData.day}"]`);
+            if (!row) return;
+            
+            const cell = row.querySelector('.editable-weight');
             if (!cell) return;
             
             const displaySpan = cell.querySelector('.weight-display');
