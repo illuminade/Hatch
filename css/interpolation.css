@@ -34,21 +34,21 @@
     background-color: rgba(76, 217, 100, 0.1);
 }
 
-/* Manual weight styling - make it appear stronger */
+/* Manual weight styling - bold as requested */
 .weight-display:not(.interpolated-weight) {
-    font-weight: 500;
+    font-weight: 700; /* Full bold, changed from 500 */
 }
 
 /* For manual high deviation */
 .weight-deviation-high:not(.interpolated-weight) {
     color: var(--error-color);
-    font-weight: 600;
+    font-weight: 700; /* Full bold, changed from 600 */
 }
 
 /* For manual low deviation */
 .weight-deviation-low:not(.interpolated-weight) {
     color: var(--accent-color);
-    font-weight: 600;
+    font-weight: 700; /* Full bold, changed from 600 */
 }
 
 /* Delete button styling */
@@ -99,7 +99,7 @@
 }
 
 .legend-example.manual {
-    font-weight: 500;
+    font-weight: 700; /* Full bold, changed from 500 */
 }
 
 .legend-example.interpolated {
