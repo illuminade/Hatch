@@ -1,4 +1,4 @@
-// eggWeightInterpolation.js - Direct implementation for weight interpolation and removal
+// eggWeightInterpolation.js - Direct implementation for weight interpolation
 document.addEventListener('DOMContentLoaded', function() {
     // Constants
     const INTERPOLATED_WEIGHT_CLASS = 'interpolated-weight';
@@ -22,67 +22,138 @@ document.addEventListener('DOMContentLoaded', function() {
     document.head.appendChild(styleElement);
     
     // Initialize after a short delay
-    setTimeout(initializeInterpolation, 500);
-    
-    // Initialize the interpolation functionality
-    function initializeInterpolation() {
-        // Only proceed if the weight tracking functionality is available
-        if (!window.eggWeightTracking || !window.eggWeightTracking.saveAllWeights) {
-            // Try again later if not ready
-            setTimeout(initializeInterpolation, 500);
-            return;
-        }
-        
-        // Store a reference to the original save function
-        const originalSaveWeights = window.eggWeightTracking.saveAllWeights;
-        
-        // Completely override the saveAllWeights function
-        window.eggWeightTracking.saveAllWeights = async function() {
-            // Get the current egg data
-            if (!window.currentEggId || !window.eggs) {
-                window.showToast('No egg data available');
-                return;
-            }
-            
-            const currentEgg = window.eggs.find(egg => egg.id === window.currentEggId);
-            if (!currentEgg || !Array.isArray(currentEgg.dailyWeights)) {
-                window.showToast('Invalid egg data');
-                return;
-            }
-            
-            try {
-                // Step 1: Collect all user-entered weights from the table
-                // This includes any changes (added, modified, or removed weights)
-                const updatedWeights = collectUserEnteredWeights(currentEgg.dailyWeights);
-                
-                // Step 2: Save the collected weights to the database
-                await window.eggsCollection.doc(currentEggId).update({
-                    dailyWeights: updatedWeights
-                });
-                
-                // Step 3: Update the local egg data
-                currentEgg.dailyWeights = updatedWeights;
-                
-                // Step 4: Update the global eggs array
-                const eggIndex = window.eggs.findIndex(e => e.id === currentEggId);
-                if (eggIndex !== -1) {
-                    window.eggs[eggIndex].dailyWeights = updatedWeights;
+    setTimeout(function() {
+        // If eggWeightTracking module is available, override its methods
+        if (window.eggWeightTracking) {
+            // -------------------- KEY FIX: Completely replace the original saveAllWeights function --------------------
+            window.eggWeightTracking.saveAllWeights = async function() {
+                if (!window.currentEggId || !window.eggs) {
+                    window.showToast('No egg data available');
+                    return;
                 }
                 
-                // Step 5: Perform interpolation
-                await runInterpolation();
+                const currentEgg = window.eggs.find(egg => egg.id === window.currentEggId);
+                if (!currentEgg || !Array.isArray(currentEgg.dailyWeights)) {
+                    window.showToast('Invalid egg data');
+                    return;
+                }
                 
-                // Remove any "unsaved-changes" classes
-                const unsavedCells = document.querySelectorAll('.unsaved-changes');
-                unsavedCells.forEach(cell => {
-                    cell.classList.remove('unsaved-changes');
-                });
+                try {
+                    // Make a copy of the data to work with
+                    const updatedWeights = JSON.parse(JSON.stringify(currentEgg.dailyWeights));
+                    let hasChanges = false;
+                    
+                    // Get all cells and process them
+                    const tableBody = document.getElementById('dailyWeightTableBody');
+                    if (!tableBody) return;
+                    
+                    // Collect all user-entered weights and clear interpolated weights
+                    for (let i = 0; i < updatedWeights.length; i++) {
+                        // Reset interpolated weights
+                        if (updatedWeights[i].interpolated) {
+                            updatedWeights[i].weight = null;
+                            updatedWeights[i].interpolated = false;
+                            hasChanges = true;
+                        }
+                        
+                        // Find the corresponding table cell
+                        const cell = tableBody.querySelector(`.editable-weight[data-day="${i}"]`);
+                        if (!cell) continue;
+                        
+                        const displaySpan = cell.querySelector('.weight-display');
+                        if (!displaySpan) continue;
+                        
+                        const displayText = displaySpan.textContent.trim();
+                        
+                        // Check if this is user-entered data
+                        if (displayText === 'Click to add') {
+                            // Weight was cleared by user
+                            if (updatedWeights[i].weight !== null) {
+                                updatedWeights[i].weight = null;
+                                hasChanges = true;
+                            }
+                        } else if (!isNaN(parseFloat(displayText)) && !displaySpan.classList.contains(INTERPOLATED_WEIGHT_CLASS)) {
+                            // User-entered weight
+                            const newWeight = parseFloat(displayText);
+                            if (updatedWeights[i].weight !== newWeight) {
+                                updatedWeights[i].weight = newWeight;
+                                hasChanges = true;
+                            }
+                        }
+                    }
+                    
+                    // If there are no changes, don't proceed
+                    if (!hasChanges) {
+                        window.showToast('No changes to update');
+                        return;
+                    }
+                    
+                    // Update the database with the changes
+                    await window.eggsCollection.doc(currentEgg.id).update({
+                        dailyWeights: updatedWeights
+                    });
+                    
+                    // Update local data
+                    currentEgg.dailyWeights = updatedWeights;
+                    
+                    // Update the global eggs array
+                    const eggIndex = window.eggs.findIndex(e => e.id === currentEgg.id);
+                    if (eggIndex !== -1) {
+                        window.eggs[eggIndex].dailyWeights = updatedWeights;
+                    }
+                    
+                    // Run interpolation calculations
+                    await runInterpolation();
+                    
+                    // Remove the unsaved changes styling
+                    tableBody.querySelectorAll('.unsaved-changes').forEach(cell => {
+                        cell.classList.remove('unsaved-changes');
+                    });
+                    
+                } catch (error) {
+                    window.showToast('Error updating weights: ' + (error.message || 'Unknown error'));
+                }
+            };
+            
+            // Override finishWeightEditing to properly handle empty weights
+            if (window.eggWeightTracking.finishWeightEditing) {
+                const originalFinishEditing = window.eggWeightTracking.finishWeightEditing;
                 
-                window.showToast('Weights updated successfully');
-            } catch (error) {
-                window.showToast('Error updating weights: ' + (error.message || 'Unknown error'));
+                window.eggWeightTracking.finishWeightEditing = function(cell, input, displaySpan) {
+                    if (!input.value || input.value.trim() === '') {
+                        // If the input is empty, handle as a deleted weight
+                        displaySpan.textContent = 'Click to add';
+                        displaySpan.style.display = '';
+                        cell.classList.add('unsaved-changes');
+                        
+                        // Remove the input
+                        if (input.parentNode === cell) {
+                            cell.removeChild(input);
+                        }
+                        
+                        return true;
+                    }
+                    
+                    // Otherwise use the original function
+                    return originalFinishEditing.call(this, cell, input, displaySpan);
+                };
             }
-        };
+            
+            // Override renderDailyWeightsTable to add our styling for interpolated weights
+            if (window.eggWeightTracking.renderDailyWeightsTable) {
+                const originalRenderTable = window.eggWeightTracking.renderDailyWeightsTable;
+                
+                window.eggWeightTracking.renderDailyWeightsTable = function(egg) {
+                    // Call the original render function first
+                    originalRenderTable.call(this, egg);
+                    
+                    // Then apply interpolation styling
+                    setTimeout(function() {
+                        applyInterpolationStyling(egg);
+                    }, 10);
+                };
+            }
+        }
         
         // Listen for egg details loaded to apply styling
         document.addEventListener('eggDetailsLoaded', function(event) {
@@ -93,68 +164,46 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }, 100);
         });
-        
-        // Override the finishWeightEditing function to properly handle empty inputs
-        if (window.eggWeightTracking.finishWeightEditing) {
-            const originalFinishEditing = window.eggWeightTracking.finishWeightEditing;
-            
-            window.eggWeightTracking.finishWeightEditing = function(cell, input, displaySpan) {
-                // If the input is empty, handle it as a weight removal
-                if (!input.value || input.value.trim() === '') {
-                    // Mark as empty
-                    displaySpan.textContent = 'Click to add';
-                    displaySpan.style.display = '';
-                    cell.classList.add('unsaved-changes');
-                    
-                    // Remove the input
-                    if (input.parentNode === cell) {
-                        cell.removeChild(input);
-                    }
-                    
-                    return true;
-                }
-                
-                // Otherwise use the original function
-                return originalFinishEditing.call(this, cell, input, displaySpan);
-            };
-        }
-    }
+    }, 500);
     
-    // Collect all user-entered weights from the table
-    function collectUserEnteredWeights(originalWeights) {
-        // Create a deep copy of the weights array
-        const updatedWeights = JSON.parse(JSON.stringify(originalWeights));
-        
-        // Get all weight cells
+    // Apply styling to interpolated weights
+    function applyInterpolationStyling(egg) {
         const tableBody = document.getElementById('dailyWeightTableBody');
-        if (!tableBody) return updatedWeights;
+        if (!tableBody || !egg.dailyWeights) return;
         
-        // Check each cell in the table
-        const cells = tableBody.querySelectorAll('.editable-weight');
-        cells.forEach(cell => {
-            const day = parseInt(cell.dataset.day);
-            if (isNaN(day) || day < 0 || day >= updatedWeights.length) return;
+        egg.dailyWeights.forEach(dayData => {
+            // Find the cell for this day
+            const cell = tableBody.querySelector(`.editable-weight[data-day="${dayData.day}"]`);
+            if (!cell) return;
             
             const displaySpan = cell.querySelector('.weight-display');
             if (!displaySpan) return;
             
-            const displayText = displaySpan.textContent.trim();
-            
-            // Handle different display values
-            if (displayText === 'Click to add') {
-                // This is an empty cell - set weight to null
-                updatedWeights[day].weight = null;
-                updatedWeights[day].interpolated = false;
-            } else if (!isNaN(parseFloat(displayText))) {
-                // This is a number - update the weight if it's displayed as non-interpolated
-                if (!displaySpan.classList.contains(INTERPOLATED_WEIGHT_CLASS)) {
-                    updatedWeights[day].weight = parseFloat(displayText);
-                    updatedWeights[day].interpolated = false;
+            // Handle weight display
+            if (dayData.weight !== null) {
+                // Update the text
+                displaySpan.textContent = dayData.weight;
+                
+                // Apply or remove interpolation styling
+                if (dayData.interpolated) {
+                    displaySpan.classList.add(INTERPOLATED_WEIGHT_CLASS);
+                } else {
+                    displaySpan.classList.remove(INTERPOLATED_WEIGHT_CLASS);
                 }
+                
+                // Handle deviation styling
+                displaySpan.classList.remove('weight-deviation-high', 'weight-deviation-low');
+                
+                const deviation = dayData.weight - dayData.targetWeight;
+                if (Math.abs(deviation) > (dayData.targetWeight * 0.05)) {
+                    const deviationClass = deviation > 0 ? 'weight-deviation-high' : 'weight-deviation-low';
+                    displaySpan.classList.add(deviationClass);
+                }
+            } else {
+                displaySpan.textContent = 'Click to add';
+                displaySpan.classList.remove(INTERPOLATED_WEIGHT_CLASS, 'weight-deviation-high', 'weight-deviation-low');
             }
         });
-        
-        return updatedWeights;
     }
     
     // Main interpolation function
@@ -168,14 +217,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // Make a copy of the dailyWeights array
         const updatedWeights = JSON.parse(JSON.stringify(currentEgg.dailyWeights));
         
-        // Reset interpolated weights first
-        updatedWeights.forEach(day => {
-            if (day.interpolated) {
-                day.weight = null;
-                day.interpolated = false;
-            }
-        });
-        
         // Find days with known weights (user-entered only)
         const knownWeightDays = updatedWeights
             .filter(day => day.weight !== null && !day.interpolated)
@@ -187,8 +228,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // Sort by day
         knownWeightDays.sort((a, b) => a.day - b.day);
         
-        // If we don't have any known weights, just save the update
-        if (knownWeightDays.length === 0) {
+        // If we don't have enough known weights for interpolation, just return
+        if (knownWeightDays.length < 2) {
             try {
                 await window.eggsCollection.doc(currentEgg.id).update({
                     dailyWeights: updatedWeights
@@ -279,50 +320,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Apply styling to interpolated weights
-    function applyInterpolationStyling(egg) {
-        const tableBody = document.getElementById('dailyWeightTableBody');
-        if (!tableBody || !egg.dailyWeights) return;
-        
-        egg.dailyWeights.forEach(dayData => {
-            // Find the cell for this day
-            const cell = tableBody.querySelector(`.editable-weight[data-day="${dayData.day}"]`);
-            if (!cell) return;
-            
-            const displaySpan = cell.querySelector('.weight-display');
-            if (!displaySpan) return;
-            
-            // Handle weight display
-            if (dayData.weight !== null) {
-                // Update the text
-                displaySpan.textContent = dayData.weight;
-                
-                // Apply or remove interpolation styling
-                if (dayData.interpolated) {
-                    displaySpan.classList.add(INTERPOLATED_WEIGHT_CLASS);
-                } else {
-                    displaySpan.classList.remove(INTERPOLATED_WEIGHT_CLASS);
-                }
-                
-                // Handle deviation styling
-                displaySpan.classList.remove('weight-deviation-high', 'weight-deviation-low');
-                
-                const deviation = dayData.weight - dayData.targetWeight;
-                if (Math.abs(deviation) > (dayData.targetWeight * 0.05)) {
-                    const deviationClass = deviation > 0 ? 'weight-deviation-high' : 'weight-deviation-low';
-                    displaySpan.classList.add(deviationClass);
-                }
-            } else {
-                displaySpan.textContent = 'Click to add';
-                displaySpan.classList.remove(INTERPOLATED_WEIGHT_CLASS, 'weight-deviation-high', 'weight-deviation-low');
-            }
-        });
-    }
-    
     // Make functions available globally
     window.eggWeightInterpolation = {
         runInterpolation,
-        applyInterpolationStyling,
-        collectUserEnteredWeights
+        applyInterpolationStyling
     };
 });
