@@ -67,7 +67,46 @@ function formatDate(dateString) {
 }
 
 // Calculate incubation progress
-function calculateProgress(startDate, durationDays) {
+function calculateProgress(eggData) {
+    // Check if dailyWeights array exists
+    if (!eggData.dailyWeights || eggData.dailyWeights.length === 0) {
+        // Fallback to date-based progress if no weights are recorded
+        return calculateDateBasedProgress(eggData.incubationStart, eggData.incubationDays);
+    }
+    
+    // Get total incubation days
+    const incubationDays = parseInt(eggData.incubationDays);
+    
+    // Find the latest day with a manually entered weight
+    let latestWeightDay = 0;
+    
+    // First check for manually entered weights (non-interpolated)
+    const manualWeights = eggData.dailyWeights.filter(day => 
+        day.weight !== null && !day.interpolated
+    );
+    
+    if (manualWeights.length > 0) {
+        // Find the maximum day number with manual weight
+        latestWeightDay = Math.max(...manualWeights.map(day => day.day));
+    } else {
+        // If no manual weights, check for any weights (including interpolated)
+        const anyWeights = eggData.dailyWeights.filter(day => day.weight !== null);
+        if (anyWeights.length > 0) {
+            latestWeightDay = Math.max(...anyWeights.map(day => day.day));
+        }
+    }
+    
+    // Calculate progress as a percentage of the incubation period
+    let progress = Math.round((latestWeightDay / incubationDays) * 100);
+    
+    // Cap progress between 0% and 100%
+    progress = Math.max(0, Math.min(100, progress));
+    
+    return progress;
+}
+
+// Original date-based progress calculation (used as fallback)
+function calculateDateBasedProgress(startDate, durationDays) {
     const start = new Date(startDate);
     const end = new Date(start);
     end.setDate(start.getDate() + parseInt(durationDays));
