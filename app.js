@@ -123,6 +123,7 @@ function calculateDateBasedProgress(startDate, durationDays) {
     return progress;
 }
 
+
 // Calculate days remaining
 function calculateDaysRemaining(startDate, durationDays) {
     const start = new Date(startDate);
@@ -331,7 +332,8 @@ function renderEggList() {
     eggListContainer.innerHTML = '';
     
     eggs.forEach(egg => {
-        const progress = calculateProgress(egg.incubationStart, egg.incubationDays);
+        // Use the new progress calculation function
+        const progress = calculateProgress(egg);
         
         const eggCard = document.createElement('div');
         eggCard.className = 'egg-card';
@@ -372,7 +374,8 @@ function showEggDetails(eggId) {
     
     currentEggId = eggId;
     
-    const progress = calculateProgress(egg.incubationStart, egg.incubationDays);
+    // Use updated progress calculation that considers weight tracking
+    const progress = calculateProgress(egg);
     const daysRemaining = calculateDaysRemaining(egg.incubationStart, egg.incubationDays);
     const hatchDate = calculateHatchDate(egg.incubationStart, egg.incubationDays);
     
@@ -387,7 +390,20 @@ function showEggDetails(eggId) {
     document.getElementById('detailIncubationPeriod').textContent = `${egg.incubationDays} days`;
     document.getElementById('detailHatchDate').textContent = hatchDate;
     document.getElementById('detailProgressText').textContent = `${progress}%`;
-    document.getElementById('detailDaysRemaining').textContent = daysRemaining > 0 ? `${daysRemaining} days remaining` : 'Ready to hatch!';
+    
+    // Update the progress explanation text to be clearer about the meaning
+    let progressExplanation;
+    if (egg.dailyWeights && egg.dailyWeights.length > 0) {
+        // Find last tracked day with weight
+        const lastTrackedDay = Math.max(...egg.dailyWeights
+            .filter(day => day.weight !== null)
+            .map(day => day.day));
+        progressExplanation = `Tracked through day ${lastTrackedDay} of ${egg.incubationDays}`;
+    } else {
+        progressExplanation = daysRemaining > 0 ? `${daysRemaining} days remaining` : 'Ready to hatch!';
+    }
+    document.getElementById('detailDaysRemaining').textContent = progressExplanation;
+    
     document.getElementById('detailNotes').textContent = egg.notes || 'No notes added.';
     
     // Update humidity loss rates if they exist
