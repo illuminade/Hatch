@@ -1,0 +1,86 @@
+/* pinHole.css - Styles for pin hole features */
+
+/* Pin hole recommendation card styles */
+.pin-hole-recommendations {
+    margin-top: 15px;
+}
+
+.pin-hole-recommendation {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+    padding: 10px;
+    background-color: rgba(0,0,0,0.03);
+    border-radius: 8px;
+}
+
+.recommendation-icon {
+    width: 40px;
+    height: 40px;
+    background: var(--primary-color);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-size: 1.1rem;
+    margin-right: 12px;
+}
+
+.recommendation-details {
+    flex: 1;
+}
+
+.recommendation-day {
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.recommendation-type {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.recommendation-effect {
+    color: var(--accent-color);
+    font-weight: 500;
+    margin-top: 3px;
+}
+
+/* Tab styles */
+.settings-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 20px;
+}
+
+.settings-tab {
+    padding: 12px 20px;
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--text-secondary);
+    position: relative;
+}
+
+.settings-tab.active {
+    color: var(--primary-color);
+}
+
+.settings-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background-color: var(--primary-color);
+    border-radius: 3px 3px 0 0;
+}
+
+.settings-tab-content {
+    display: none;
+}
+
+.settings-tab-content.active {
+    display: block;
+}
