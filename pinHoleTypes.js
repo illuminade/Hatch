@@ -4,6 +4,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize Firebase collection for pin hole types
     const pinHoleTypesCollection = window.db.collection('pinHoleTypes');
+    
+    // Add a console log to verify the collection is accessible
+    console.log("Pin Hole Types Collection:", pinHoleTypesCollection);
 
     // Array to store pin hole types
     window.pinHoleTypes = [];
