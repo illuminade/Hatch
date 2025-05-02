@@ -3,12 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Egg Types Management - Hatch</title>
+    <title>Settings - Hatch</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="index.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Tab styles */
+        .settings-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+        .settings-tab {
+            padding: 12px 20px;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--text-secondary);
+            position: relative;
+        }
+        .settings-tab.active {
+            color: var(--primary-color);
+        }
+        .settings-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background-color: var(--primary-color);
+            border-radius: 3px 3px 0 0;
+        }
+        .settings-tab-content {
+            display: none;
+        }
+        .settings-tab-content.active {
+            display: block;
+        }
+    </style>
 </head>
 <body>
     <div class="app-container">
@@ -25,57 +59,137 @@
         </header>
         
         <div class="content">
-            <!-- Egg Management Page -->
-            <div id="eggManagementPage" class="page active">
-                <h2 class="page-title">Egg Types Management</h2>
+            <!-- Settings Page -->
+            <div id="settingsPage" class="page active">
+                <h2 class="page-title">Settings</h2>
                 
-                <div class="management-header">
-                    <p>Manage your egg types and their coefficient values.</p>
+                <div class="settings-tabs">
+                    <div class="settings-tab active" data-tab="eggTypes">Egg Types</div>
+                    <div class="settings-tab" data-tab="pinHoleTypes">Pin Hole Types</div>
+                    <div class="settings-tab" data-tab="recommendations">Recommendation Settings</div>
                 </div>
                 
-                <div id="eggTypesListContainer" class="egg-types-list">
-                    <!-- Egg types will be loaded here -->
+                <!-- Egg Types Tab -->
+                <div id="eggTypesTab" class="settings-tab-content active">
+                    <div class="management-header">
+                        <p>Manage your egg types and their coefficient values.</p>
+                    </div>
+                    
+                    <div id="eggTypesListContainer" class="egg-types-list">
+                        <!-- Egg types will be loaded here -->
+                    </div>
+                    
+                    <div id="eggTypesEmptyState" class="empty-state">
+                        <div class="empty-state-icon">
+                            <i class="fas fa-list"></i>
+                        </div>
+                        <h3>No egg types yet</h3>
+                        <p>Add an egg type below to get started</p>
+                    </div>
+                    
+                    <!-- Add Egg Type Form (directly on the page) -->
+                    <div class="section-divider"></div>
+                    
+                    <h3 class="section-title">Add New Egg Type</h3>
+                    
+                    <form id="addEggTypeForm" class="form-container">
+                        <div class="form-group">
+                            <label class="form-label" for="eggTypeName">Egg Type Name</label>
+                            <input type="text" id="eggTypeName" class="form-input" placeholder="E.g., Chicken, Duck, etc." required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="coefficientNumber">Coefficient Number</label>
+                            <input type="number" id="coefficientNumber" class="form-input" placeholder="Enter 9 decimal number" step="0.000000001" required>
+                            <div class="form-help">This coefficient is used for advanced calculations and will not be shown elsewhere.</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="eggTypeNotes">Notes (optional)</label>
+                            <textarea id="eggTypeNotes" class="form-input" rows="2" placeholder="Add any additional information"></textarea>
+                        </div>
+                        
+                        <div class="btn-row">
+                            <button type="submit" class="btn btn-primary">Add Egg Type</button>
+                        </div>
+                    </form>
                 </div>
                 
-                <div id="eggTypesEmptyState" class="empty-state">
-                    <div class="empty-state-icon">
-                        <i class="fas fa-list"></i>
+                <!-- Pin Hole Types Tab -->
+                <div id="pinHoleTypesTab" class="settings-tab-content">
+                    <div class="management-header">
+                        <p>Manage pin hole types and their daily weight loss increase values.</p>
                     </div>
-                    <h3>No egg types yet</h3>
-                    <p>Add an egg type below to get started</p>
+                    
+                    <div id="pinHoleTypesListContainer" class="egg-types-list">
+                        <!-- Pin hole types will be loaded here -->
+                    </div>
+                    
+                    <div id="pinHoleTypesEmptyState" class="empty-state">
+                        <div class="empty-state-icon">
+                            <i class="fas fa-thumbtack"></i>
+                        </div>
+                        <h3>No pin hole types yet</h3>
+                        <p>Add a pin hole type below to get started</p>
+                    </div>
+                    
+                    <!-- Add Pin Hole Type Form -->
+                    <div class="section-divider"></div>
+                    
+                    <h3 class="section-title">Add New Pin Hole Type</h3>
+                    
+                    <form id="addPinHoleTypeForm" class="form-container">
+                        <div class="form-group">
+                            <label class="form-label" for="pinHoleTypeName">Pin Hole Type Name</label>
+                            <input type="text" id="pinHoleTypeName" class="form-input" placeholder="E.g., Small, Medium, Large" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="dailyLossRateIncrease">Daily Loss Rate Increase (grams)</label>
+                            <input type="number" id="dailyLossRateIncrease" class="form-input" placeholder="E.g., 0.05" step="0.01" min="0.01" required>
+                            <div class="form-help">This is the additional weight loss per day in grams caused by this pin hole type.</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="pinHoleTypeDescription">Description (optional)</label>
+                            <textarea id="pinHoleTypeDescription" class="form-input" rows="2" placeholder="Add any additional information"></textarea>
+                        </div>
+                        
+                        <div class="btn-row">
+                            <button type="submit" class="btn btn-primary">Add Pin Hole Type</button>
+                        </div>
+                    </form>
                 </div>
                 
-                <!-- Add Egg Type Form (directly on the page) -->
-                <div class="section-divider"></div>
-                
-                <h3 class="section-title">Add New Egg Type</h3>
-                
-                <form id="addEggTypeForm" class="form-container">
-                    <div class="form-group">
-                        <label class="form-label" for="eggTypeName">Egg Type Name</label>
-                        <input type="text" id="eggTypeName" class="form-input" placeholder="E.g., Chicken, Duck, etc." required>
+                <!-- Recommendation Settings Tab -->
+                <div id="recommendationsTab" class="settings-tab-content">
+                    <div class="management-header">
+                        <p>Configure settings for pin hole recommendations.</p>
                     </div>
                     
-                    <div class="form-group">
-                        <label class="form-label" for="coefficientNumber">Coefficient Number</label>
-                        <input type="number" id="coefficientNumber" class="form-input" placeholder="Enter 9 decimal number" step="0.000000001" required>
-                        <div class="form-help">This coefficient is used for advanced calculations and will not be shown elsewhere.</div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label" for="eggTypeNotes">Notes (optional)</label>
-                        <textarea id="eggTypeNotes" class="form-input" rows="2" placeholder="Add any additional information"></textarea>
-                    </div>
-                    
-                    <div class="btn-row">
-                        <button type="submit" class="btn btn-primary">Add Egg Type</button>
-                    </div>
-                </form>
+                    <form id="pinHoleSettingsForm" class="form-container">
+                        <div class="form-group">
+                            <label class="form-label" for="minDayForFirstPinHole">Earliest Day for First Pin Hole</label>
+                            <input type="number" id="minDayForFirstPinHole" class="form-input" min="1" value="7" required>
+                            <div class="form-help">The earliest day in the incubation period when pin holes can be recommended.</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="daysBetweenPinHoles">Minimum Days Between Pin Holes</label>
+                            <input type="number" id="daysBetweenPinHoles" class="form-input" min="1" value="3" required>
+                            <div class="form-help">The minimum number of days required between consecutive pin holes.</div>
+                        </div>
+                        
+                        <div class="btn-row">
+                            <button type="submit" class="btn btn-primary">Save Settings</button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Edit Egg Type Modal (keep this as a modal) -->
+    <!-- Edit Egg Type Modal -->
     <div id="editEggTypeModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -111,6 +225,43 @@
             </form>
         </div>
     </div>
+    
+    <!-- Edit Pin Hole Type Modal -->
+    <div id="editPinHoleTypeModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Pin Hole Type</h3>
+                <button id="closeEditPinHoleTypeModal" class="close-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form id="editPinHoleTypeForm" class="form-container">
+                <input type="hidden" id="editPinHoleTypeId">
+                
+                <div class="form-group">
+                    <label class="form-label" for="editPinHoleTypeName">Pin Hole Type Name</label>
+                    <input type="text" id="editPinHoleTypeName" class="form-input" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="editDailyLossRateIncrease">Daily Loss Rate Increase (grams)</label>
+                    <input type="number" id="editDailyLossRateIncrease" class="form-input" step="0.01" min="0.01" required>
+                    <div class="form-help">This is the additional weight loss per day in grams caused by this pin hole type.</div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="editPinHoleTypeDescription">Description (optional)</label>
+                    <textarea id="editPinHoleTypeDescription" class="form-input" rows="2"></textarea>
+                </div>
+                
+                <div class="btn-row">
+                    <button type="button" id="cancelEditPinHoleType" class="btn btn-outline">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <div id="toast" class="toast"></div>
     
@@ -121,5 +272,8 @@
     <!-- App scripts -->
     <script src="firebase-config.js"></script>
     <script src="management.js"></script>
+    <script src="pinHoleTypes.js"></script>
+    <script src="pinHoleTypesForm.js"></script>
+    <script src="pinHoleSettings.js"></script>
 </body>
 </html>
