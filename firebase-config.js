@@ -16,3 +16,5 @@ const eggTypesCollection = db.collection('eggTypes');
 window.db = db;
 window.eggsCollection = eggsCollection;
 window.eggTypesCollection = eggTypesCollection;
+const pinHoleTypesCollection = db.collection('pinHoleTypes');
+window.pinHoleTypesCollection = pinHoleTypesCollection;
