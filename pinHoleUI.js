@@ -170,3 +170,19 @@ document.addEventListener('DOMContentLoaded', function() {
         renderRecommendations
     };
 });
+document.addEventListener('eggDetailsLoaded', function(event) {
+    const eggId = event.detail.eggId;
+    
+    function attemptRender() {
+        if (window.pinHoleRecommendationModule?.calculateRecommendations && 
+            window.pinHoleTypes && 
+            window.pinHoleSettings) {
+            renderRecommendations(eggId);
+        } else {
+            // Retry after a short delay
+            setTimeout(attemptRender, 100);
+        }
+    }
+    
+    attemptRender();
+});
