@@ -1,5 +1,10 @@
 // pinHoleRecommendation.js - Handles pin hole recommendation calculations
+window.pinHoleRecommendationModule = {};
 document.addEventListener('DOMContentLoaded', function() {
+    // ... existing code ...
+    // Make sure to set the functions properly
+    window.pinHoleRecommendationModule.calculateRecommendations = calculateRecommendations;
+});
     console.log("Pin Hole Recommendation module initializing...");
     
     // Calculate recommendations for an egg
